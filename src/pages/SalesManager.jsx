@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-// نموذج إضافة بيع بسيط (بدون أصناف)
-import { useEffect as useEffectAddSale, useState as useStateAddSale } from 'react';
+import { useSales } from '../hooks/useSales';
 import { productService } from '../services/productService';
+// ...existing code...
 function AddSaleForm({ onSubmit }) {
-  const [products, setProducts] = useStateAddSale([]);
-  const [items, setItems] = useStateAddSale([{ productId: '', quantity: 1 }]);
-  const [submitting, setSubmitting] = useStateAddSale(false);
-  const [error, setError] = useStateAddSale('');
+  const [products, setProducts] = useState([]);
+  const [items, setItems] = useState([{ productId: '', quantity: 1 }]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffectAddSale(() => {
+  useEffect(() => {
     productService.getProducts().then(setProducts).catch(() => setProducts([]));
   }, []);
 
@@ -80,89 +80,60 @@ function AddSaleForm({ onSubmit }) {
     </form>
   );
 }
-import { Plus, Search, Eye, Trash2, ShoppingCart, User } from 'lucide-react';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import Modal from '../components/ui/Modal';
-
-import { saleService } from '../services/saleService';
+// Duplicate imports removed
 
 // أدوات اختيار الشهر والسنة (أرقام)
 const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 const SalesManager = () => {
+  const today = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
-  const [sales, setSales] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    sales,
+    monthlyStats,
+    loading,
+    loadingStats,
+    error,
+    loadSales,
+    loadMonthlyStats,
+    addSale,
+    deleteSale,
+    setError,
+  } = useSales();
 
-  // إحصائيات شهرية
-  const today = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // 1-based
-  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
-  const [monthlyStats, setMonthlyStats] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-
-
-  useEffect(() => {
+  React.useEffect(() => {
     loadSales();
-  }, []);
+  }, [loadSales]);
 
-  useEffect(() => {
-    fetchMonthlyStats(selectedMonth, selectedYear);
-  }, [selectedMonth, selectedYear]);
-  const fetchMonthlyStats = async (month, year) => {
-    setLoadingStats(true);
-    try {
-      const stats = await saleService.getMonthlyStats(month, year);
-      setMonthlyStats(stats);
-    } catch (err) {
-      setMonthlyStats(null);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
+  React.useEffect(() => {
+    loadMonthlyStats(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear, loadMonthlyStats]);
 
-  const loadSales = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await saleService.getSales();
-      setSales(data);
-    } catch (err) {
-      setError('فشل في تحميل بيانات المبيعات');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  // إذا تم اختيار شهر (أي monthlyStats موجودة)، اعرض فقط مبيعات الشهر
   const displayedSales = (monthlyStats && Array.isArray(monthlyStats.sales)) ? monthlyStats.sales : sales;
   const filteredSales = displayedSales.filter(sale => sale.id.toString().includes(searchTerm));
 
   const handleDeleteSale = async (saleId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه العملية؟')) {
       try {
-        await saleService.deleteSale(saleId);
-        await loadSales();
+        await deleteSale(saleId);
       } catch (err) {
         setError('فشل في حذف عملية البيع');
       }
     }
   };
 
-
   const openViewModal = async (sale) => {
     setViewLoading(true);
     setIsViewModalOpen(true);
     try {
-      const saleData = await saleService.getSaleById(sale.id);
+      const saleData = await (await import('../services/saleService')).default.getSaleById(sale.id);
       setSelectedSale(saleData);
     } catch (err) {
       setSelectedSale({ ...sale, error: 'فشل في تحميل تفاصيل العملية' });
@@ -316,9 +287,8 @@ const SalesManager = () => {
       >
         <AddSaleForm onSubmit={async (items) => {
           try {
-            await saleService.createSale(items.map(i => ({ productId: parseInt(i.productId), quantity: i.quantity })));
+            await addSale(items.map(i => ({ productId: parseInt(i.productId), quantity: i.quantity })));
             setIsAddModalOpen(false);
-            await loadSales();
           } catch (err) {
             setError('فشل في إضافة عملية البيع');
           }

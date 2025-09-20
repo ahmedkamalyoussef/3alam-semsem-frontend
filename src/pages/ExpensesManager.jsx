@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useExpenses } from '../hooks/useExpenses';
 import { Plus, Search, Edit, Trash2, Receipt, DollarSign, Calendar, Eye } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -11,74 +12,49 @@ const ExpensesManager = () => {
   const [expenseById, setExpenseById] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  // إحصائيات
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [monthlyStats, setMonthlyStats] = useState({ total: 0, count: 0 });
-  const [monthlyExpensesList, setMonthlyExpensesList] = useState([]);
+
+  const {
+    expenses,
+    monthlyStats,
+    loading,
+    loadingStats,
+    error,
+    loadExpenses,
+    loadMonthlyStats,
+    addExpense,
+    editExpense,
+    deleteExpense,
+    setError,
+  } = useExpenses();
 
   // Load data
-  useEffect(() => {
-    loadMonthlyStats(selectedMonth, selectedYear);
-    loadMonthlyExpenses(selectedMonth, selectedYear);
+  React.useEffect(() => {
     loadExpenses();
-  }, [selectedMonth, selectedYear, modalType]);
+  }, [loadExpenses]);
 
-  const loadMonthlyStats = async (month, year) => {
-    try {
-      const stats = await expenseService.getMonthlyStats(month, year);
-      setMonthlyStats({
-        total: stats.totalAmount ?? 0,
-        count: stats.expensesCount ?? 0
-      });
-    } catch {
-      setMonthlyStats({ total: 0, count: 0 });
-    }
-  };
+  React.useEffect(() => {
+    loadMonthlyStats(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear, loadMonthlyStats]);
 
-  const loadMonthlyExpenses = async (month, year) => {
-    try {
-      const all = await expenseService.getExpenses();
-      const filtered = all.filter(e => {
-        const d = new Date(e.expenseDate || e.date);
-        return d.getMonth() + 1 === month && d.getFullYear() === year;
-      });
-      setMonthlyExpensesList(filtered);
-    } catch {
-      setMonthlyExpensesList([]);
-    }
-  };
-
-  const loadExpenses = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await expenseService.getExpenses();
-      setExpenses(data);
-    } catch (error) {
-      setError('فشل في تحميل المصروفات');
-      console.error('Error loading expenses:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredExpenses = monthlyExpensesList;
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const filteredExpenses = expenses.filter(
+    (expense) =>
+      expense.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (new Date(expense.expenseDate || expense.date).getMonth() + 1 === selectedMonth) &&
+      (new Date(expense.expenseDate || expense.date).getFullYear() === selectedYear)
+  );
+  const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
 
   // CRUD
   const handleAddExpense = async (expenseData) => {
     try {
-      await expenseService.createExpense(
-        expenseData.description,
-        parseFloat(expenseData.amount),
-        expenseData.date
-      );
-      await loadExpenses();
+      await addExpense({
+        description: expenseData.description,
+        amount: parseFloat(expenseData.amount),
+        expenseDate: expenseData.date
+      });
+      await loadMonthlyStats(selectedMonth, selectedYear);
       setModalType(null);
     } catch (error) {
       setError('فشل في إضافة المصروف');
@@ -87,12 +63,12 @@ const ExpensesManager = () => {
 
   const handleEditExpense = async (expenseData) => {
     try {
-      await expenseService.updateExpense(editingExpense.id, {
+      await editExpense(editingExpense.id, {
         description: expenseData.description,
         amount: parseFloat(expenseData.amount),
         expenseDate: expenseData.date
       });
-      await loadExpenses();
+      await loadMonthlyStats(selectedMonth, selectedYear);
       setModalType(null);
       setEditingExpense(null);
     } catch {
@@ -103,8 +79,8 @@ const ExpensesManager = () => {
   const handleDeleteExpense = async (expenseId) => {
     if (window.confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
       try {
-        await expenseService.deleteExpense(expenseId);
-        await loadExpenses();
+        await deleteExpense(expenseId);
+        await loadMonthlyStats(selectedMonth, selectedYear);
       } catch {
         setError('فشل في حذف المصروف');
       }
@@ -174,7 +150,7 @@ const ExpensesManager = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">مصروفات الشهر</p>
-              <p className="text-2xl font-bold text-gray-900">{monthlyStats.total.toLocaleString()} جنيه</p>
+              <p className="text-2xl font-bold text-gray-900">{(monthlyStats && typeof monthlyStats.total === 'number' ? monthlyStats.total : 0).toLocaleString()} جنيه</p>
             </div>
             <Calendar className="w-8 h-8 text-blue-600" />
           </div>
@@ -183,7 +159,7 @@ const ExpensesManager = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">عدد المصروفات</p>
-              <p className="text-2xl font-bold text-gray-900">{monthlyStats.count}</p>
+              <p className="text-2xl font-bold text-gray-900">{(monthlyStats && typeof monthlyStats.count === 'number' ? monthlyStats.count : 0)}</p>
             </div>
             <Receipt className="w-8 h-8 text-green-600" />
           </div>
