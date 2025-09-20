@@ -33,15 +33,19 @@ export function useSales() {
     }
   }, []);
 
-  const addSale = useCallback(async (items) => {
+
+  const addSale = useCallback(async (items, month, year) => {
     await saleService.createSale(items);
     await loadSales();
-  }, [loadSales]);
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadSales, loadMonthlyStats]);
 
-  const deleteSale = useCallback(async (saleId) => {
+
+  const deleteSale = useCallback(async (saleId, month, year) => {
     await saleService.deleteSale(saleId);
     await loadSales();
-  }, [loadSales]);
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadSales, loadMonthlyStats]);
 
   return {
     sales,

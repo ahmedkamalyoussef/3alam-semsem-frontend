@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSales } from '../hooks/useSales';
 import { productService } from '../services/productService';
-// ...existing code...
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Modal from '../components/ui/Modal';
+import { Plus, ShoppingCart, User, Search, Eye, Trash2 } from 'lucide-react';
+
 function AddSaleForm({ onSubmit }) {
   const [products, setProducts] = useState([]);
   const [items, setItems] = useState([{ productId: '', quantity: 1 }]);
@@ -80,9 +84,7 @@ function AddSaleForm({ onSubmit }) {
     </form>
   );
 }
-// Duplicate imports removed
 
-// أدوات اختيار الشهر والسنة (أرقام)
 const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 const SalesManager = () => {
@@ -108,11 +110,11 @@ const SalesManager = () => {
     setError,
   } = useSales();
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadSales();
   }, [loadSales]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadMonthlyStats(selectedMonth, selectedYear);
   }, [selectedMonth, selectedYear, loadMonthlyStats]);
 
@@ -122,7 +124,7 @@ const SalesManager = () => {
   const handleDeleteSale = async (saleId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه العملية؟')) {
       try {
-        await deleteSale(saleId);
+        await deleteSale(saleId, selectedMonth, selectedYear);
       } catch (err) {
         setError('فشل في حذف عملية البيع');
       }
@@ -154,7 +156,6 @@ const SalesManager = () => {
           عملية بيع جديدة
         </Button>
       </div>
-
 
       {/* Sales Monthly Statistics */}
       <div className="space-y-2">
@@ -219,7 +220,6 @@ const SalesManager = () => {
         </div>
       </Card>
 
-
       {/* Sales Table */}
       <Card padding="none">
         <div className="overflow-x-auto max-h-96 table-container">
@@ -237,17 +237,14 @@ const SalesManager = () => {
               {filteredSales.map((sale) => (
                 <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {/* اسم أول منتج في البيع */}
                     {sale.SaleItems && sale.SaleItems.length > 0
                       ? (sale.SaleItems[0].Product?.name || sale.SaleItems[0].product || '---')
                       : '---'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {/* استخدم sale.saleDate أو sale.date */}
                     {(sale.saleDate || sale.date || '').split('T')[0]}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {/* عدد الأصناف */}
                     {(sale.SaleItems?.reduce((acc, item) => acc + (item.quantity || 0), 0)) || sale.items || 0} صنف
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
@@ -277,8 +274,6 @@ const SalesManager = () => {
         )}
       </Card>
 
-
-
       {/* Add Sale Modal */}
       <Modal
         isOpen={isAddModalOpen}
@@ -287,14 +282,17 @@ const SalesManager = () => {
       >
         <AddSaleForm onSubmit={async (items) => {
           try {
-            await addSale(items.map(i => ({ productId: parseInt(i.productId), quantity: i.quantity })));
+            await addSale(
+              items.map(i => ({ productId: parseInt(i.productId), quantity: i.quantity })),
+              selectedMonth,
+              selectedYear
+            );
             setIsAddModalOpen(false);
           } catch (err) {
             setError('فشل في إضافة عملية البيع');
           }
         }} />
       </Modal>
-
 
       {/* View Sale Modal */}
       <Modal
@@ -315,10 +313,6 @@ const SalesManager = () => {
   );
 };
 
-
-
-
-// Sale Details Component (بدون العميل)
 const SaleDetails = ({ sale }) => {
   return (
     <div className="space-y-4">
