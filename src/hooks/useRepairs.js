@@ -25,7 +25,11 @@ export function useRepairs() {
     setLoadingStats(true);
     try {
       const stats = await repairService.getMonthlyStats(month, year);
-      setMonthlyStats(stats);
+      setMonthlyStats({
+        totalCount: stats.totalCount ?? 0,
+        totalCost: stats.totalCost ?? 0,
+        repairs: stats.repairs || [],
+      });
     } catch (err) {
       setMonthlyStats({ totalCount: 0, totalCost: 0, repairs: [] });
     } finally {
@@ -33,34 +37,41 @@ export function useRepairs() {
     }
   }, []);
 
-  const addRepair = useCallback(async (repair) => {
-    await repairService.createRepair(repair);
+  const addRepair = useCallback(async (repair, month, year) => {
+    const { customerName, deviceName, problemDesc, cost } = repair;
+    await repairService.createRepair(customerName, deviceName, problemDesc, cost);
     await loadRepairs();
-  }, [loadRepairs]);
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadRepairs, loadMonthlyStats]);
 
-  const editRepair = useCallback(async (id, repair) => {
+  const editRepair = useCallback(async (id, repair, month, year) => {
     await repairService.updateRepair(id, repair);
     await loadRepairs();
-  }, [loadRepairs]);
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadRepairs, loadMonthlyStats]);
 
-  const deleteRepair = useCallback(async (id) => {
+  const deleteRepair = useCallback(async (id, month, year) => {
     await repairService.deleteRepair(id);
     await loadRepairs();
-  }, [loadRepairs]);
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadRepairs, loadMonthlyStats]);
 
   // Mark fixed/not fixed/delivered
-  const markFixed = useCallback(async (id) => {
+  const markFixed = useCallback(async (id, month, year) => {
     await repairService.markFixed(id);
     await loadRepairs();
-  }, [loadRepairs]);
-  const markNotFixed = useCallback(async (id) => {
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadRepairs, loadMonthlyStats]);
+  const markNotFixed = useCallback(async (id, month, year) => {
     await repairService.markNotFixed(id);
     await loadRepairs();
-  }, [loadRepairs]);
-  const deliver = useCallback(async (id, date) => {
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadRepairs, loadMonthlyStats]);
+  const deliver = useCallback(async (id, date, month, year) => {
     await repairService.deliver(id, date);
     await loadRepairs();
-  }, [loadRepairs]);
+    if (month && year) await loadMonthlyStats(month, year);
+  }, [loadRepairs, loadMonthlyStats]);
 
   return {
     repairs,

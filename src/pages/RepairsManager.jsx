@@ -1,39 +1,51 @@
 // ...existing code...
 import React, { useState, useEffect } from 'react';
-import repairService from '../services/repairService';
+import { useRepairs } from '../hooks/useRepairs';
 import { Plus, Search, Edit, Trash2, Wrench, Clock, CheckCircle, XCircle, User, Phone, Check, X, Truck } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 const RepairsManager = () => {
+  // Monthly stats and filters must be declared first
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showAll, setShowAll] = useState(false);
+
+  // UI state
   const [expandedRepairId, setExpandedRepairId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRepair, setEditingRepair] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  // لا يوجد حالات في الـ API
 
-  const [repairs, setRepairs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const {
+    repairs,
+    monthlyStats,
+    loading,
+    loadingStats,
+    error,
+    loadRepairs,
+    loadMonthlyStats,
+    addRepair,
+    editRepair,
+    deleteRepair,
+    markFixed,
+    markNotFixed,
+    deliver,
+    setError,
+  } = useRepairs();
 
-  useEffect(() => {
+
+  React.useEffect(() => {
     loadRepairs();
-  }, [repairs]);
+  }, [loadRepairs]);
 
-  const loadRepairs = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await repairService.getRepairs();
-      setRepairs(data);
-    } catch (error) {
-      setError('فشل في تحميل الإصلاحات');
-      console.error('Error loading repairs:', error);
-    } finally {
-      setLoading(false);
+
+  React.useEffect(() => {
+    if (!showAll) {
+      loadMonthlyStats(selectedMonth, selectedYear);
     }
-  };
+  }, [selectedMonth, selectedYear, showAll, loadMonthlyStats]);
 
   // لا يوجد حالات في الـ API
 
@@ -46,73 +58,36 @@ const RepairsManager = () => {
   });
 
 
-  // Monthly stats
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [monthlyStats, setMonthlyStats] = useState({ totalCount: 0, totalCost: 0, repairs: [] });
-  const [showAll, setShowAll] = useState(false);
+  // Removed duplicate selectedMonth, selectedYear, showAll
 
-  useEffect(() => {
-    if (!showAll) {
-      loadMonthlyStats(selectedMonth, selectedYear);
-    }
-  }, [selectedMonth, selectedYear, showAll]);
 
-  const loadMonthlyStats = async (month, year) => {
-    try {
-      const stats = await repairService.getMonthlyStats(month, year);
-      setMonthlyStats({
-        totalCount: stats.totalCount ?? 0,
-        totalCost: stats.totalCost ?? 0,
-        repairs: stats.repairs || []
-      });
-      
-    } catch {
-      setMonthlyStats({ totalCount: 0, totalCost: 0, repairs: [] });
-    }
-  };
+  // Removed duplicate loadMonthlyStats function
 
   const handleAddRepair = async (repairData) => {
     try {
-      await repairService.createRepair(
-        repairData.customerName,
-        repairData.deviceName,
-        repairData.problemDesc,
-        parseFloat(repairData.cost)
-      );
-      await loadRepairs();
+      await addRepair(repairData, selectedMonth, selectedYear);
       setIsAddModalOpen(false);
     } catch (error) {
       setError('فشل في إضافة الإصلاح');
-      console.error('Error adding repair:', error);
     }
   };
 
   const handleEditRepair = async (repairData) => {
     try {
-      await repairService.updateRepair(editingRepair.id, {
-        customerName: repairData.customerName,
-        deviceName: repairData.deviceName,
-        problemDesc: repairData.problemDesc,
-        cost: parseFloat(repairData.cost)
-      });
-      await loadRepairs();
+      await editRepair(editingRepair.id, repairData, selectedMonth, selectedYear);
       setIsEditModalOpen(false);
       setEditingRepair(null);
     } catch (error) {
       setError('فشل في تحديث الإصلاح');
-      console.error('Error updating repair:', error);
     }
   };
 
   const handleDeleteRepair = async (repairId) => {
     if (window.confirm('هل أنت متأكد من حذف هذا الإصلاح؟')) {
       try {
-        await repairService.deleteRepair(repairId);
-        await loadRepairs();
+        await deleteRepair(repairId, selectedMonth, selectedYear);
       } catch (error) {
         setError('فشل في حذف الإصلاح');
-        console.error('Error deleting repair:', error);
       }
     }
   };
@@ -126,8 +101,7 @@ const RepairsManager = () => {
   // Actions for repair status
   const handleMarkFixed = async (repairId) => {
     try {
-      await repairService.markFixed(repairId);
-      await loadRepairs();
+      await markFixed(repairId, selectedMonth, selectedYear);
     } catch (error) {
       setError('فشل في وضع علامة تم الإصلاح');
     }
@@ -135,8 +109,7 @@ const RepairsManager = () => {
 
   const handleMarkNotFixed = async (repairId) => {
     try {
-      await repairService.markNotFixed(repairId);
-      await loadRepairs();
+      await markNotFixed(repairId, selectedMonth, selectedYear);
     } catch (error) {
       setError('فشل في وضع علامة لم يتم الإصلاح');
     }
@@ -144,9 +117,7 @@ const RepairsManager = () => {
 
   const handleDeliver = async (repairId) => {
     try {
-      await repairService.deliver(repairId, new Date());
-      await loadRepairs();
-      
+      await deliver(repairId, new Date(), selectedMonth, selectedYear);
     } catch (error) {
       setError('فشل في تسليم الإصلاح');
     }
