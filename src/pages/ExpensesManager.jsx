@@ -1,25 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Receipt, DollarSign, Calendar } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Receipt, DollarSign, Calendar, Eye } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import expenseService from '../services/expenseService';
 
 const ExpensesManager = () => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [modalType, setModalType] = useState(null); // add | edit | view | null
   const [editingExpense, setEditingExpense] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  // حذف الفئة لأن الـ API لا يدعمها
+  const [expenseById, setExpenseById] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState('');
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Load expenses on component mount
+  // إحصائيات
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [monthlyStats, setMonthlyStats] = useState({ total: 0, count: 0 });
+  const [monthlyExpensesList, setMonthlyExpensesList] = useState([]);
+
+  // Load data
   useEffect(() => {
+    loadMonthlyStats(selectedMonth, selectedYear);
+    loadMonthlyExpenses(selectedMonth, selectedYear);
     loadExpenses();
-  }, []);
+  }, [selectedMonth, selectedYear,modalType,monthlyExpensesList]);
+
+  const loadMonthlyStats = async (month, year) => {
+    try {
+      const stats = await expenseService.getMonthlyStats(month, year);
+      setMonthlyStats({
+        total: stats.totalAmount ?? 0,
+        count: stats.expensesCount ?? 0
+      });
+    } catch {
+      setMonthlyStats({ total: 0, count: 0 });
+    }
+  };
+
+  const loadMonthlyExpenses = async (month, year) => {
+    try {
+      const all = await expenseService.getExpenses();
+      const filtered = all.filter(e => {
+        const d = new Date(e.expenseDate || e.date);
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
+      });
+      setMonthlyExpensesList(filtered);
+    } catch {
+      setMonthlyExpensesList([]);
+    }
+  };
 
   const loadExpenses = async () => {
     try {
@@ -35,16 +67,10 @@ const ExpensesManager = () => {
     }
   };
 
-  // لا يوجد فئات في الـ API
-
-  const filteredExpenses = expenses.filter(expense => {
-    return expense.description.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-
+  const filteredExpenses = monthlyExpensesList;
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  // لا يوجد نوع في الـ API، فقط نجمع الكل
-  const monthlyExpenses = totalExpenses;
 
+  // CRUD
   const handleAddExpense = async (expenseData) => {
     try {
       await expenseService.createExpense(
@@ -52,11 +78,10 @@ const ExpensesManager = () => {
         parseFloat(expenseData.amount),
         expenseData.date
       );
-      await loadExpenses(); // Reload expenses
-      setIsAddModalOpen(false);
+      await loadExpenses();
+      setModalType(null);
     } catch (error) {
       setError('فشل في إضافة المصروف');
-      console.error('Error adding expense:', error);
     }
   };
 
@@ -67,12 +92,11 @@ const ExpensesManager = () => {
         amount: parseFloat(expenseData.amount),
         expenseDate: expenseData.date
       });
-      await loadExpenses(); // Reload expenses
-      setIsEditModalOpen(false);
+      await loadExpenses();
+      setModalType(null);
       setEditingExpense(null);
-    } catch (error) {
+    } catch {
       setError('فشل في تحديث المصروف');
-      console.error('Error updating expense:', error);
     }
   };
 
@@ -80,33 +104,55 @@ const ExpensesManager = () => {
     if (window.confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
       try {
         await expenseService.deleteExpense(expenseId);
-        await loadExpenses(); // Reload expenses
-      } catch (error) {
+        await loadExpenses();
+      } catch {
         setError('فشل في حذف المصروف');
-        console.error('Error deleting expense:', error);
       }
     }
   };
 
-  const openEditModal = (expense) => {
-    setEditingExpense(expense);
-    setIsEditModalOpen(true);
+  const openViewModal = async (expenseId) => {
+    setModalType('view');
+    setExpenseById(null);
+    try {
+      const data = await expenseService.getExpenseById(expenseId);
+      setExpenseById(data);
+    } catch {
+      setExpenseById({ error: 'فشل في تحميل تفاصيل المصروف' });
+    }
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">إدارة المصروفات</h2>
           <p className="text-gray-600 mt-1">تسجيل ومتابعة المصروفات</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
+        <Button onClick={() => setModalType('add')}>
           <Plus className="w-4 h-4" />
           إضافة مصروف جديد
         </Button>
       </div>
 
       {/* Statistics */}
+      <div className="flex gap-2 items-center mb-4">
+        <label>الشهر:</label>
+        <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>
+          {[...Array(12)].map((_, i) => (
+            <option key={i+1} value={i+1}>{i+1}</option>
+          ))}
+        </select>
+        <label>السنة:</label>
+        <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
+          {[...Array(5)].map((_, i) => {
+            const year = new Date().getFullYear() - 2 + i;
+            return <option key={year} value={year}>{year}</option>;
+          })}
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         <Card>
           <div className="flex items-center justify-between">
@@ -117,44 +163,37 @@ const ExpensesManager = () => {
             <DollarSign className="w-8 h-8 text-red-600" />
           </div>
         </Card>
-        
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">المصروفات الشهرية</p>
-              <p className="text-2xl font-bold text-gray-900">{monthlyExpenses.toLocaleString()} جنيه</p>
+              <p className="text-sm text-gray-600">مصروفات الشهر</p>
+              <p className="text-2xl font-bold text-gray-900">{monthlyStats.total.toLocaleString()} جنيه</p>
             </div>
             <Calendar className="w-8 h-8 text-blue-600" />
           </div>
         </Card>
-        
         <Card>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">عدد المصروفات</p>
-              <p className="text-2xl font-bold text-gray-900">{expenses.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{monthlyStats.count}</p>
             </div>
             <Receipt className="w-8 h-8 text-green-600" />
           </div>
         </Card>
       </div>
 
-      {/* Search and Filter */}
+      {/* Search */}
       <Card>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="البحث عن مصروف..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          {/* لا يوجد فلاتر فئة */}
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="البحث عن مصروف..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
       </Card>
 
@@ -164,89 +203,76 @@ const ExpensesManager = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوصف</th>
-                {/* حذف الفئة */}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500">الوصف</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500">المبلغ</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500">التاريخ</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredExpenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{expense.description}</div>
-                      <div className="text-sm text-gray-500">{new Date(expense.createdAt).toLocaleString('ar-SA')}</div>
-                    </div>
-                  </td>
-                  {/* حذف الفئة */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                    {expense.amount.toLocaleString()} جنيه
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {expense.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditModal(expense)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(expense.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                <tr key={expense.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">{expense.description}</td>
+                  <td className="px-6 py-4 text-red-600">{expense.amount.toLocaleString()} جنيه</td>
+                  <td className="px-6 py-4">{expense.date}</td>
+                  <td className="px-6 py-4 flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => openViewModal(expense.id)}>
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingExpense(expense); setModalType('edit'); }}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(expense.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        
         {filteredExpenses.length === 0 && (
           <div className="text-center py-12">
             <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد مصروفات</h3>
+            <h3 className="text-lg font-medium">لا توجد مصروفات</h3>
             <p className="text-gray-500">ابدأ بتسجيل مصروف جديد</p>
           </div>
         )}
       </Card>
 
-      {/* Add Expense Modal */}
+      {/* Modal */}
       <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="إضافة مصروف جديد"
+        isOpen={!!modalType}
+        onClose={() => { setModalType(null); setEditingExpense(null); }}
+        title={
+          modalType === 'add' ? 'إضافة مصروف جديد' :
+          modalType === 'edit' ? 'تعديل المصروف' :
+          modalType === 'view' ? 'تفاصيل المصروف' : ''
+        }
       >
-  <ExpenseForm onSubmit={handleAddExpense} />
-      </Modal>
-
-      {/* Edit Expense Modal */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingExpense(null);
-        }}
-        title="تعديل المصروف"
-      >
-        {editingExpense && (
-          <ExpenseForm 
-            onSubmit={handleEditExpense} 
-            initialData={editingExpense}
-          />
+        {modalType === 'add' && <ExpenseForm onSubmit={handleAddExpense} />}
+        {modalType === 'edit' && editingExpense && (
+          <ExpenseForm onSubmit={handleEditExpense} initialData={editingExpense} />
+        )}
+        {modalType === 'view' && (
+          expenseById === null ? <div className="text-center">جاري التحميل...</div> :
+          expenseById.error ? <div className="text-center text-red-600">{expenseById.error}</div> :
+          <div className="space-y-2">
+            <div><b>الوصف:</b> {expenseById.description}</div>
+            <div><b>المبلغ:</b> {expenseById.amount?.toLocaleString()} جنيه</div>
+            <div><b>التاريخ:</b> {expenseById.expenseDate}</div>
+          </div>
         )}
       </Modal>
     </div>
   );
 };
 
-// Expense Form Component
+// Expense Form
 const ExpenseForm = ({ onSubmit, initialData = {} }) => {
   const [formData, setFormData] = useState({
     description: initialData.description || '',
-    amount: initialData.amount || '',
-    date: initialData.expenseDate || initialData.date || new Date().toISOString().split('T')[0],
+    amount: initialData.amount || ''
   });
 
   const handleSubmit = (e) => {
@@ -254,50 +280,26 @@ const ExpenseForm = ({ onSubmit, initialData = {} }) => {
     onSubmit(formData);
   };
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">وصف المصروف</label>
-        <input
-          type="text"
-          value={formData.description}
-          onChange={(e) => handleChange('description', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="أدخل وصف المصروف"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ (جنيه)</label>
-          <input
-            type="number"
-            value={formData.amount}
-            onChange={(e) => handleChange('amount', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="0"
-            min="0"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ</label>
-          <input
-            type="date"
-            value={formData.date}
-            onChange={(e) => handleChange('date', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-      </div>
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary">إلغاء</Button>
-        <Button type="submit" variant="success">حفظ المصروف</Button>
+      <input
+        type="text"
+        value={formData.description}
+        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        placeholder="وصف المصروف"
+        required
+        className="w-full border px-3 py-2 rounded"
+      />
+      <input
+        type="number"
+        value={formData.amount}
+        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+        placeholder="المبلغ"
+        required
+        className="w-full border px-3 py-2 rounded"
+      />
+      <div className="flex justify-end gap-2">
+        <Button type="submit" variant="success">حفظ</Button>
       </div>
     </form>
   );
