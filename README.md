@@ -1,72 +1,65 @@
-# نظام إدارة المتجر - 3alam Semsem
 
-نظام إدارة متجر شامل مبني بـ React و Tailwind CSS لإدارة المنتجات والمبيعات والإصلاحات.
+# 3alam Semsem Store Management System (Frontend)
 
-## الميزات المتاحة
+This is a modern store management system built with React and Tailwind CSS. It provides a full-featured dashboard for managing products, sales, repairs, expenses, and more.
 
-### ✅ الميزات المكتملة (مطابقة للباك إند)
-- **لوحة التحكم**: عرض الإحصائيات والمبيعات الأخيرة
-- **إدارة المنتجات**: إضافة، تعديل، حذف وعرض المنتجات
-- **إدارة الفئات**: إدارة فئات المنتجات وتنظيمها
-- **إدارة المبيعات**: تسجيل عمليات البيع ومتابعتها
-- **أصناف المبيعات**: عرض تفاصيل أصناف المبيعات والأداء
-- **إدارة الإصلاحات**: تسجيل ومتابعة طلبات الإصلاح
-- **إدارة المصروفات**: تسجيل ومتابعة المصروفات
-- **تصميم متجاوب**: يعمل على جميع الأجهزة
-- **واجهة عربية**: دعم كامل للغة العربية واتجاه RTL
+## Features
 
-### 🔗 التوافق مع الباك إند
-النظام متوافق بالكامل مع الباك إند ويتضمن جميع الوحدات المتاحة:
-- Admin (المدير)
-- Category (الفئات)
-- Product (المنتجات)
-- Sale (المبيعات)
-- SaleItem (أصناف المبيعات)
-- Repair (الإصلاحات)
-- Expense (المصروفات)
+- **Dashboard**: Real-time statistics, recent sales, and quick actions
+- **Product Management**: Add, edit, delete, and view products
+- **Category Management**: Organize and manage product categories
+- **Sales Management**: Register and track sales operations
+- **Sale Items**: View details and performance of sold items
+- **Repairs Management**: Register and follow up on repair requests
+- **Expenses Management**: Register and track expenses
+- **Responsive Design**: Works on all devices
+- **RTL & Arabic UI**: Full support for Arabic and RTL layout
 
-## التقنيات المستخدمة
+### Backend Integration
+Fully compatible with the backend API, supporting all modules:
+- Admin
+- Category
+- Product
+- Sale
+- SaleItem
+- Repair
+- Expense
 
-- **React 19**: مكتبة واجهة المستخدم
-- **Tailwind CSS**: إطار عمل CSS
-- **Lucide React**: مكتبة الأيقونات
-- **Vite**: أداة البناء والتطوير
+## Tech Stack
 
-## التثبيت والتشغيل
+- **React 19**
+- **Tailwind CSS**
+- **Lucide React** (icons)
+- **Vite** (build tool)
 
-### المتطلبات
-- Node.js (الإصدار 18 أو أحدث)
-- npm أو yarn
+## Getting Started
 
-### خطوات التثبيت
+### Prerequisites
+- Node.js (v18 or later)
+- npm or yarn
 
-1. **تثبيت التبعيات:**
-```bash
-npm install
-```
+### Installation
 
-2. **تشغيل الخادم المحلي:**
-```bash
-npm run dev
-```
+1. **Install dependencies:**
+	```bash
+	npm install
+	```
+2. **Start the development server:**
+	```bash
+	npm run dev
+	```
+3. **Open the app:**
+	Visit [http://localhost:5173](http://localhost:5173) in your browser.
 
-3. **فتح التطبيق:**
-افتح المتصفح وانتقل إلى `http://localhost:5173`
-
-## هيكل المشروع
+## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── ui/                 # المكونات الأساسية
-│   │   ├── Button.jsx
-│   │   ├── Card.jsx
-│   │   └── Modal.jsx
-│   ├── layout/             # مكونات التخطيط
-│   │   ├── Sidebar.jsx
-│   │   └── Header.jsx
-│   └── StoreManagement.jsx # المكون الرئيسي
-├── pages/                  # صفحات التطبيق (مطابقة للباك إند)
+│   ├── ui/              # UI components (Button, Card, Modal)
+│   ├── layout/          # Layout components (Sidebar, Header)
+│   └── StoreManagement.jsx
+├── pages/               # Main app pages (fully API-driven)
 │   ├── Dashboard.jsx
 │   ├── ProductsManager.jsx
 │   ├── CategoriesManager.jsx
@@ -80,64 +73,33 @@ src/
 └── index.css
 ```
 
-## الاستخدام
+## Usage
 
-### لوحة التحكم
-- عرض إحصائيات المبيعات اليومية
-- متابعة الإصلاحات المعلقة
-- الإجراءات السريعة لجميع الوحدات
+- **Dashboard**: View sales stats, pending repairs, and quick navigation
+- **Products**: Add, edit, delete, search, and filter products by category
+- **Categories**: Create, edit, delete, and view product categories
+- **Sales**: Register new sales, view details, and monthly stats
+- **Sale Items**: View sold item details and performance
+- **Repairs**: Register and track repair requests and costs
+- **Expenses**: Register, categorize, and track expenses
 
-### إدارة المنتجات
-- إضافة منتجات جديدة
-- البحث والفلترة حسب الفئة
-- تعديل وحذف المنتجات
-- متابعة المخزون
+## Customization
 
-### إدارة الفئات
-- إنشاء فئات منتجات جديدة
-- تعديل وحذف الفئات
-- متابعة عدد المنتجات في كل فئة
+- **Colors**: Customize via Tailwind CSS variables in `index.css`
+- **Fonts**: Uses Cairo (Arabic) by default; change in `index.css` if needed
 
-### إدارة المبيعات
-- تسجيل عمليات بيع جديدة
-- عرض تفاصيل العمليات
-- متابعة إحصائيات المبيعات
+## Roadmap
 
-### أصناف المبيعات
-- عرض تفاصيل كل صنف مباع
-- إحصائيات الأداء
-- متابعة المنتجات الأكثر مبيعاً
+- [x] Full API integration for all modules
+- [ ] Authentication system
+- [ ] Advanced reporting
+- [ ] Notifications system
+- [ ] Mobile app
 
-### إدارة الإصلاحات
-- تسجيل طلبات إصلاح جديدة
-- متابعة حالة الإصلاحات
-- إدارة تكاليف الإصلاح
+## Contribution
 
-### إدارة المصروفات
-- تسجيل المصروفات المختلفة
-- تصنيف المصروفات
-- متابعة الإحصائيات المالية
+Contributions are welcome! Please open a Pull Request or Issue for discussion.
 
-## التخصيص
+## License
 
-### الألوان
-يمكن تخصيص الألوان من خلال تعديل متغيرات Tailwind CSS في ملف `index.css`.
-
-### الخطوط
-النظام يستخدم خط Cairo العربي. يمكن تغييره من خلال تعديل import في `index.css`.
-
-## التطوير المستقبلي
-
-- [ ] ربط مع API للبيانات الحقيقية
-- [ ] إضافة نظام المصادقة
-- [ ] تطوير تقارير متقدمة
-- [ ] إضافة نظام الإشعارات
-- [ ] تطوير تطبيق موبايل
-
-## المساهمة
-
-نرحب بالمساهمات! يرجى إنشاء Pull Request أو فتح Issue للمناقشة.
-
-## الترخيص
-
-هذا المشروع مرخص تحت رخصة MIT.# 3alam-semsem-frontend
+This project is licensed under the MIT License.
