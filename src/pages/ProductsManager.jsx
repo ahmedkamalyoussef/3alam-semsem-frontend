@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { Plus, Search, Edit, Trash2, Eye, Package } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -16,7 +17,7 @@ const ProductsManager = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // Only for local form validation
 
   // Load data on component mount
   useEffect(() => {
@@ -34,6 +35,7 @@ const ProductsManager = () => {
       setProducts(productsData);
       setCategories(categoriesData);
     } catch (error) {
+      toast.error('فشل في تحميل البيانات');
       setError('فشل في تحميل البيانات');
       console.error('Error loading data:', error);
     } finally {
@@ -57,7 +59,9 @@ const ProductsManager = () => {
       );
       await loadData(); // Reload products
       setIsAddModalOpen(false);
+      toast.success('تمت إضافة المنتج بنجاح');
     } catch (error) {
+      toast.error(error?.message || 'فشل في إضافة المنتج');
       setError('فشل في إضافة المنتج');
       console.error('Error adding product:', error);
     }
@@ -74,7 +78,9 @@ const ProductsManager = () => {
       await loadData(); // Reload products
       setIsEditModalOpen(false);
       setEditingProduct(null);
+      toast.success('تم تحديث المنتج بنجاح');
     } catch (error) {
+      toast.error(error?.message || 'فشل في تحديث المنتج');
       setError('فشل في تحديث المنتج');
       console.error('Error updating product:', error);
     }
@@ -85,7 +91,9 @@ const ProductsManager = () => {
       try {
         await productService.deleteProduct(productId);
         await loadData(); // Reload products
+        toast.success('تم حذف المنتج بنجاح');
       } catch (error) {
+        toast.error(error?.message || 'فشل في حذف المنتج');
         setError('فشل في حذف المنتج');
         console.error('Error deleting product:', error);
       }
@@ -98,6 +106,7 @@ const ProductsManager = () => {
   };
 
   return (
+    // Only show error div for local validation errors, not API errors
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

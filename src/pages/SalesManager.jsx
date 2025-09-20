@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { useSales } from '../hooks/useSales';
 import { productService } from '../services/productService';
 import Button from '../components/ui/Button';
@@ -10,7 +11,7 @@ function AddSaleForm({ onSubmit }) {
   const [products, setProducts] = useState([]);
   const [items, setItems] = useState([{ productId: '', quantity: 1 }]);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // Only for local form validation
 
   useEffect(() => {
     productService.getProducts().then(setProducts).catch(() => setProducts([]));
@@ -35,14 +36,14 @@ function AddSaleForm({ onSubmit }) {
       }
       await onSubmit(validItems);
     } catch (err) {
-      setError('فشل في إضافة عملية البيع');
+      toast.error('فشل في إضافة عملية البيع');
     }
     setSubmitting(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+  {error && <div className="text-red-600 text-sm">{error}</div>}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">الأصناف</label>
         <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -125,8 +126,9 @@ const SalesManager = () => {
     if (window.confirm('هل أنت متأكد من حذف هذه العملية؟')) {
       try {
         await deleteSale(saleId, selectedMonth, selectedYear);
+        toast.success('تم حذف عملية البيع بنجاح');
       } catch (err) {
-        setError('فشل في حذف عملية البيع');
+        toast.error('فشل في حذف عملية البيع');
       }
     }
   };
@@ -288,8 +290,9 @@ const SalesManager = () => {
               selectedYear
             );
             setIsAddModalOpen(false);
+            toast.success('تمت إضافة عملية البيع بنجاح');
           } catch (err) {
-            setError('فشل في إضافة عملية البيع');
+            toast.error('فشل في إضافة عملية البيع');
           }
         }} />
       </Modal>
