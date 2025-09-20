@@ -16,7 +16,7 @@ const StoreManagement = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+  return <Dashboard onNavigate={setActiveTab} />;
       case 'products':
         return <ProductsManager />;
       case 'categories':
