@@ -1,10 +1,3 @@
-  // تحديث كل البيانات بعد أي أكشن
-  const refreshAll = async () => {
-    await loadRepairs();
-    if (!showAll) {
-      await loadMonthlyStats(selectedMonth, selectedYear);
-    }
-  };
 // ...existing code...
 import React, { useState, useEffect } from 'react';
 import repairService from '../services/repairService';
@@ -26,7 +19,7 @@ const RepairsManager = () => {
 
   useEffect(() => {
     loadRepairs();
-  }, []);
+  }, [repairs]);
 
   const loadRepairs = async () => {
     try {
@@ -87,7 +80,7 @@ const RepairsManager = () => {
         repairData.problemDesc,
         parseFloat(repairData.cost)
       );
-      await refreshAll();
+      await loadRepairs();
       setIsAddModalOpen(false);
     } catch (error) {
       setError('فشل في إضافة الإصلاح');
@@ -103,7 +96,7 @@ const RepairsManager = () => {
         problemDesc: repairData.problemDesc,
         cost: parseFloat(repairData.cost)
       });
-      await refreshAll();
+      await loadRepairs();
       setIsEditModalOpen(false);
       setEditingRepair(null);
     } catch (error) {
@@ -116,7 +109,7 @@ const RepairsManager = () => {
     if (window.confirm('هل أنت متأكد من حذف هذا الإصلاح؟')) {
       try {
         await repairService.deleteRepair(repairId);
-        await refreshAll();
+        await loadRepairs();
       } catch (error) {
         setError('فشل في حذف الإصلاح');
         console.error('Error deleting repair:', error);
@@ -134,7 +127,7 @@ const RepairsManager = () => {
   const handleMarkFixed = async (repairId) => {
     try {
       await repairService.markFixed(repairId);
-      await refreshAll();
+      await loadRepairs();
     } catch (error) {
       setError('فشل في وضع علامة تم الإصلاح');
     }
@@ -143,7 +136,7 @@ const RepairsManager = () => {
   const handleMarkNotFixed = async (repairId) => {
     try {
       await repairService.markNotFixed(repairId);
-      await refreshAll();
+      await loadRepairs();
     } catch (error) {
       setError('فشل في وضع علامة لم يتم الإصلاح');
     }
@@ -152,7 +145,8 @@ const RepairsManager = () => {
   const handleDeliver = async (repairId) => {
     try {
       await repairService.deliver(repairId, new Date());
-      await refreshAll();
+      await loadRepairs();
+      
     } catch (error) {
       setError('فشل في تسليم الإصلاح');
     }
@@ -174,18 +168,24 @@ const RepairsManager = () => {
       {/* Monthly Statistics */}
       <div className="mb-4 flex gap-2 items-center">
         <label>الشهر:</label>
-        <select value={selectedMonth} onChange={e => { setSelectedMonth(Number(e.target.value)); setShowAll(false); }}>
-          {[...Array(12)].map((_, i) => (
-            <option key={i+1} value={i+1}>{i+1}</option>
+        <select
+          className="border rounded px-2 py-1 text-sm"
+          value={selectedMonth}
+          onChange={e => { setSelectedMonth(Number(e.target.value)); setShowAll(false); }}
+        >
+          {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map((m, i) => (
+            <option key={i+1} value={i+1}>{m}</option>
           ))}
         </select>
         <label>السنة:</label>
-        <select value={selectedYear} onChange={e => { setSelectedYear(Number(e.target.value)); setShowAll(false); }}>
-          {[...Array(5)].map((_, i) => {
-            const year = new Date().getFullYear() - 2 + i;
-            return <option key={year} value={year}>{year}</option>;
-          })}
-        </select>
+        <input
+          type="number"
+          className="border rounded px-2 py-1 focus:ring focus:ring-blue-400 w-24"
+          value={selectedYear}
+          onChange={e => { setSelectedYear(Number(e.target.value)); setShowAll(false); }}
+          min="2000"
+          max={new Date().getFullYear() + 1}
+        />
         <Button size="sm" variant={showAll ? "success" : "outline"} onClick={() => setShowAll(v => !v)}>
           الكل
         </Button>
@@ -225,6 +225,7 @@ const RepairsManager = () => {
         </div>
       </Card>
 
+
       {/* قائمة الإصلاحات */}
       <Card padding="none">
         <div className="overflow-x-auto max-h-96 table-container">
@@ -241,7 +242,19 @@ const RepairsManager = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {(showAll ? repairs : (monthlyStats.repairs || [])).length > 0 ? (showAll ? repairs : monthlyStats.repairs).map((repair) => {
+              {(showAll ? repairs : (monthlyStats.repairs || [])).filter(repair => {
+                return (
+                  (repair.deviceName && repair.deviceName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (repair.customerName && repair.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (repair.problemDesc && repair.problemDesc.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
+              }).length > 0 ? (showAll ? repairs : monthlyStats.repairs).filter(repair => {
+                return (
+                  (repair.deviceName && repair.deviceName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (repair.customerName && repair.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (repair.problemDesc && repair.problemDesc.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
+              }).map((repair) => {
                 let statusLabel = 'قيد الانتظار';
                 let statusColor = 'bg-gray-200 text-gray-800';
                 if (repair.status === 'fixed' && !repair.isDelivered) {
@@ -317,7 +330,6 @@ const RepairsManager = () => {
                             <strong>الوصف الكامل:</strong> {repair.problemDesc}<br />
                             <strong>التكلفة:</strong> {repair.cost?.toLocaleString()} جنيه<br />
                             <strong>الحالة:</strong> {statusLabel}<br />
-                            {/* يمكنك إضافة المزيد من التفاصيل هنا */}
                           </div>
                         </td>
                       </tr>

@@ -144,21 +144,19 @@ const ExpensesManager = () => {
           value={selectedMonth}
           onChange={e => setSelectedMonth(Number(e.target.value))}
         >
-          {[...Array(12)].map((_, i) => (
-            <option key={i+1} value={i+1}>{i+1}</option>
+          {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map((m, i) => (
+            <option key={i+1} value={i+1}>{m}</option>
           ))}
         </select>
         <label>السنة:</label>
-        <select
-          className="border rounded px-2 py-1 focus:ring focus:ring-blue-400"
+        <input
+          type="number"
+          className="border rounded px-2 py-1 focus:ring focus:ring-blue-400 w-24"
           value={selectedYear}
           onChange={e => setSelectedYear(Number(e.target.value))}
-        >
-          {[...Array(5)].map((_, i) => {
-            const year = new Date().getFullYear() - 2 + i;
-            return <option key={year} value={year}>{year}</option>;
-          })}
-        </select>
+          min="2000"
+          max={new Date().getFullYear() + 1}
+        />
       </div>
 
       {/* Stats cards */}

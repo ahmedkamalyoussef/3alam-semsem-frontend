@@ -84,20 +84,49 @@ import { Plus, Search, Eye, Trash2, ShoppingCart, User } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
+
 import { saleService } from '../services/saleService';
+
+// أدوات اختيار الشهر والسنة (أرقام)
+const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 const SalesManager = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // إحصائيات شهرية
+  const today = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1); // 1-based
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [monthlyStats, setMonthlyStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+
   useEffect(() => {
     loadSales();
   }, []);
+
+  useEffect(() => {
+    fetchMonthlyStats(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear]);
+  const fetchMonthlyStats = async (month, year) => {
+    setLoadingStats(true);
+    try {
+      const stats = await saleService.getMonthlyStats(month, year);
+      setMonthlyStats(stats);
+    } catch (err) {
+      setMonthlyStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const loadSales = async () => {
     try {
@@ -112,10 +141,10 @@ const SalesManager = () => {
     }
   };
 
-  const filteredSales = sales.filter(sale => {
-    const customer = sale.customerName || '';
-    return customer.toLowerCase().includes(searchTerm.toLowerCase()) || sale.id.toString().includes(searchTerm);
-  });
+
+  // إذا تم اختيار شهر (أي monthlyStats موجودة)، اعرض فقط مبيعات الشهر
+  const displayedSales = (monthlyStats && Array.isArray(monthlyStats.sales)) ? monthlyStats.sales : sales;
+  const filteredSales = displayedSales.filter(sale => sale.id.toString().includes(searchTerm));
 
   const handleDeleteSale = async (saleId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه العملية؟')) {
@@ -128,9 +157,18 @@ const SalesManager = () => {
     }
   };
 
-  const openViewModal = (sale) => {
-    setSelectedSale(sale);
+
+  const openViewModal = async (sale) => {
+    setViewLoading(true);
     setIsViewModalOpen(true);
+    try {
+      const saleData = await saleService.getSaleById(sale.id);
+      setSelectedSale(saleData);
+    } catch (err) {
+      setSelectedSale({ ...sale, error: 'فشل في تحميل تفاصيل العملية' });
+    } finally {
+      setViewLoading(false);
+    }
   };
 
   return (
@@ -146,44 +184,54 @@ const SalesManager = () => {
         </Button>
       </div>
 
-      {/* Sales Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">إجمالي المبيعات اليوم</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {sales.filter(s => s.date === new Date().toISOString().split('T')[0])
-                  .reduce((sum, s) => sum + s.total, 0).toLocaleString()} جنيه
-              </p>
+
+      {/* Sales Monthly Statistics */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 items-center mb-2">
+          <label className="text-sm">الشهر:</label>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(Number(e.target.value))}
+          >
+            {months.map((m, idx) => (
+              <option key={idx + 1} value={idx + 1}>{m}</option>
+            ))}
+          </select>
+          <label className="text-sm ml-2">السنة:</label>
+          <input
+            type="number"
+            className="border rounded px-2 py-1 text-sm w-20"
+            value={selectedYear}
+            onChange={e => setSelectedYear(Number(e.target.value))}
+            min="2000"
+            max={today.getFullYear() + 1}
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">إجمالي مبيعات الشهر</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {loadingStats ? '...' : (monthlyStats && typeof monthlyStats.totalRevenue !== 'undefined' ? Number(monthlyStats.totalRevenue).toLocaleString() : '0')} جنيه
+                </p>
+              </div>
+              <ShoppingCart className="w-8 h-8 text-green-600" />
             </div>
-            <ShoppingCart className="w-8 h-8 text-green-600" />
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">عدد العمليات اليوم</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {sales.filter(s => s.date === new Date().toISOString().split('T')[0]).length}
-              </p>
+          </Card>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">عدد العمليات في الشهر</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {loadingStats ? '...' : (monthlyStats && typeof monthlyStats.salesCount !== 'undefined' ? monthlyStats.salesCount : 0)}
+                </p>
+              </div>
+              <User className="w-8 h-8 text-blue-600" />
             </div>
-            <User className="w-8 h-8 text-blue-600" />
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">متوسط قيمة العملية</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {sales.length > 0 ? Math.round(sales.reduce((sum, s) => sum + s.total, 0) / sales.length).toLocaleString() : 0} جنيه
-              </p>
-            </div>
-            <ShoppingCart className="w-8 h-8 text-purple-600" />
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
 
       {/* Search */}
@@ -200,15 +248,15 @@ const SalesManager = () => {
         </div>
       </Card>
 
+
       {/* Sales Table */}
       <Card padding="none">
         <div className="overflow-x-auto max-h-96 table-container">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم البيع</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم المنتج</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عدد الأصناف</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجمالي</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
@@ -218,24 +266,21 @@ const SalesManager = () => {
               {filteredSales.map((sale) => (
                 <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    #{sale.id}
+                    {/* اسم أول منتج في البيع */}
+                    {sale.SaleItems && sale.SaleItems.length > 0
+                      ? (sale.SaleItems[0].Product?.name || sale.SaleItems[0].product || '---')
+                      : '---'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {sale.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-semibold text-xs">{(sale.customer || sale.customerName || '').charAt(0)}</span>
-                      </div>
-                      <span className="text-sm text-gray-900">{sale.customer || sale.customerName || '---'}</span>
-                    </div>
+                    {/* استخدم sale.saleDate أو sale.date */}
+                    {(sale.saleDate || sale.date || '').split('T')[0]}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {sale.items} صنف
+                    {/* عدد الأصناف */}
+                    {(sale.SaleItems?.reduce((acc, item) => acc + (item.quantity || 0), 0)) || sale.items || 0} صنف
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                    {(sale.total ?? sale.totalPrice ?? 0).toLocaleString()} جنيه
+                    {(sale.totalPrice ?? sale.total ?? 0).toLocaleString()} جنيه
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">
@@ -252,7 +297,6 @@ const SalesManager = () => {
             </tbody>
           </table>
         </div>
-        
         {filteredSales.length === 0 && (
           <div className="text-center py-12">
             <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -289,9 +333,13 @@ const SalesManager = () => {
           setIsViewModalOpen(false);
           setSelectedSale(null);
         }}
-        title={`تفاصيل العملية #${selectedSale?.id}`}
+        title={`تفاصيل العملية #${selectedSale?.id || ''}`}
       >
-        {selectedSale && <SaleDetails sale={selectedSale} />}
+        {viewLoading ? (
+          <div className="text-center py-8">جاري تحميل التفاصيل...</div>
+        ) : selectedSale ? (
+          <SaleDetails sale={selectedSale} />
+        ) : null}
       </Modal>
     </div>
   );
@@ -299,7 +347,8 @@ const SalesManager = () => {
 
 
 
-// Sale Details Component
+
+// Sale Details Component (بدون العميل)
 const SaleDetails = ({ sale }) => {
   return (
     <div className="space-y-4">
@@ -310,18 +359,13 @@ const SaleDetails = ({ sale }) => {
         </div>
         <div>
           <p className="text-sm text-gray-600">التاريخ</p>
-          <p className="font-medium">{sale.date}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">العميل</p>
-          <p className="font-medium">{sale.customer}</p>
+          <p className="font-medium">{(sale.saleDate || sale.date || '').split('T')[0]}</p>
         </div>
         <div>
           <p className="text-sm text-gray-600">عدد الأصناف</p>
-          <p className="font-medium">{sale.items}</p>
+          <p className="font-medium">{(sale.SaleItems?.reduce((acc, item) => acc + (item.quantity || 0), 0)) || sale.items || 0}</p>
         </div>
       </div>
-      
       <div>
         <h4 className="font-medium text-gray-900 mb-2">تفاصيل الأصناف</h4>
         <div className="space-y-2">
@@ -336,11 +380,10 @@ const SaleDetails = ({ sale }) => {
           ))}
         </div>
       </div>
-      
       <div className="border-t pt-4">
         <div className="flex justify-between text-lg font-bold">
           <span>الإجمالي:</span>
-          <span>{(sale.total ?? sale.totalPrice ?? 0).toLocaleString()} جنيه</span>
+          <span>{(sale.totalPrice ?? sale.total ?? 0).toLocaleString()} جنيه</span>
         </div>
       </div>
     </div>
