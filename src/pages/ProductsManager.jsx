@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit, Trash2, Eye, Package } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
+import productService from '../services/productService';
+import categoryService from '../services/categoryService';
 
 const ProductsManager = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -11,49 +13,82 @@ const ProductsManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Mock data - في التطبيق الحقيقي ستأتي من API
-  const [products, setProducts] = useState([
-    { id: 1, name: 'iPhone 14 Pro', price: 25000, stock: 15, category: 'الهواتف', description: 'هاتف ذكي متطور من Apple' },
-    { id: 2, name: 'Samsung Galaxy S23', price: 22000, stock: 8, category: 'الهواتف', description: 'هاتف ذكي من Samsung' },
-    { id: 3, name: 'Laptop Dell XPS 13', price: 35000, stock: 5, category: 'أجهزة الكمبيوتر', description: 'لابتوب عالي الأداء' },
-    { id: 4, name: 'AirPods Pro', price: 8000, stock: 20, category: 'الإكسسوارات', description: 'سماعات لاسلكية من Apple' },
-    { id: 5, name: 'MacBook Air M2', price: 45000, stock: 3, category: 'أجهزة الكمبيوتر', description: 'لابتوب من Apple بشريحة M2' },
-    { id: 6, name: 'Samsung Galaxy Watch', price: 12000, stock: 12, category: 'الإكسسوارات', description: 'ساعة ذكية من Samsung' }
-  ]);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const categories = ['الهواتف', 'أجهزة الكمبيوتر', 'الإكسسوارات'];
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const [productsData, categoriesData] = await Promise.all([
+        productService.getProducts(),
+        categoryService.getCategories()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
+    } catch (error) {
+      setError('فشل في تحميل البيانات');
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    const matchesCategory = !selectedCategory || product.categoryId === parseInt(selectedCategory);
     return matchesSearch && matchesCategory;
   });
 
-  const handleAddProduct = (productData) => {
-    const newProduct = {
-      id: products.length + 1,
-      ...productData,
-      stock: parseInt(productData.stock) || 0,
-      price: parseInt(productData.price) || 0
-    };
-    setProducts([...products, newProduct]);
-    setIsAddModalOpen(false);
+  const handleAddProduct = async (productData) => {
+    try {
+      await productService.createProduct(
+        productData.name,
+        parseFloat(productData.price),
+        parseInt(productData.stock),
+        parseInt(productData.categoryId)
+      );
+      await loadData(); // Reload products
+      setIsAddModalOpen(false);
+    } catch (error) {
+      setError('فشل في إضافة المنتج');
+      console.error('Error adding product:', error);
+    }
   };
 
-  const handleEditProduct = (productData) => {
-    const updatedProducts = products.map(p => 
-      p.id === editingProduct.id 
-        ? { ...p, ...productData, stock: parseInt(productData.stock) || 0, price: parseInt(productData.price) || 0 }
-        : p
-    );
-    setProducts(updatedProducts);
-    setIsEditModalOpen(false);
-    setEditingProduct(null);
+  const handleEditProduct = async (productData) => {
+    try {
+      await productService.updateProduct(editingProduct.id, {
+        name: productData.name,
+        price: parseFloat(productData.price),
+        stock: parseInt(productData.stock),
+        categoryId: parseInt(productData.categoryId)
+      });
+      await loadData(); // Reload products
+      setIsEditModalOpen(false);
+      setEditingProduct(null);
+    } catch (error) {
+      setError('فشل في تحديث المنتج');
+      console.error('Error updating product:', error);
+    }
   };
 
-  const handleDeleteProduct = (productId) => {
+  const handleDeleteProduct = async (productId) => {
     if (window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-      setProducts(products.filter(p => p.id !== productId));
+      try {
+        await productService.deleteProduct(productId);
+        await loadData(); // Reload products
+      } catch (error) {
+        setError('فشل في حذف المنتج');
+        console.error('Error deleting product:', error);
+      }
     }
   };
 
@@ -97,7 +132,7 @@ const ProductsManager = () => {
           >
             <option value="">جميع الفئات</option>
             {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+              <option key={category.id} value={category.id}>{category.name}</option>
             ))}
           </select>
         </div>
@@ -127,7 +162,7 @@ const ProductsManager = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {product.category}
+                      {categories.find(cat => cat.id === product.categoryId)?.name || 'غير محدد'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
@@ -204,15 +239,19 @@ const ProductsManager = () => {
 const ProductForm = ({ onSubmit, categories, initialData = {} }) => {
   const [formData, setFormData] = useState({
     name: initialData.name || '',
-    category: initialData.category || '',
+    categoryId: initialData.categoryId || '',
     price: initialData.price || '',
-    stock: initialData.stock || '',
-    description: initialData.description || ''
+    stock: initialData.stock || ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      name: formData.name,
+      price: formData.price,
+      stock: formData.stock,
+      categoryId: formData.categoryId
+    });
   };
 
   const handleChange = (field, value) => {
@@ -232,22 +271,22 @@ const ProductForm = ({ onSubmit, categories, initialData = {} }) => {
           required
         />
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
-        <select 
-          value={formData.category}
-          onChange={(e) => handleChange('category', e.target.value)}
+        <select
+          value={formData.categoryId}
+          onChange={(e) => handleChange('categoryId', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required
         >
           <option value="">اختر الفئة</option>
           {categories.map(category => (
-            <option key={category} value={category}>{category}</option>
+            <option key={category.id} value={category.id}>{category.name}</option>
           ))}
         </select>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">السعر (جنيه)</label>
@@ -274,18 +313,9 @@ const ProductForm = ({ onSubmit, categories, initialData = {} }) => {
           />
         </div>
       </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">الوصف (اختياري)</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => handleChange('description', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="أدخل وصف المنتج"
-          rows="3"
-        />
-      </div>
-      
+
+      {/* لا يوجد وصف في الـ API */}
+
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary">إلغاء</Button>
         <Button type="submit" variant="success">حفظ المنتج</Button>

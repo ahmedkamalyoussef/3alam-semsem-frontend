@@ -18,7 +18,7 @@ const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpe
     { id: 'products', label: 'المنتجات', icon: Package },
     { id: 'categories', label: 'الفئات', icon: Filter },
     { id: 'sales', label: 'المبيعات', icon: ShoppingCart },
-    { id: 'saleItems', label: 'أصناف المبيعات', icon: ShoppingBag },
+  // { id: 'saleItems', label: 'أصناف المبيعات', icon: ShoppingBag },
     { id: 'repairs', label: 'الإصلاحات', icon: Wrench },
     { id: 'expenses', label: 'المصروفات', icon: Receipt },
   ];

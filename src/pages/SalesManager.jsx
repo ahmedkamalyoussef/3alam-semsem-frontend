@@ -1,119 +1,130 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+// نموذج إضافة بيع بسيط (بدون أصناف)
+import { useEffect as useEffectAddSale, useState as useStateAddSale } from 'react';
+import { productService } from '../services/productService';
+function AddSaleForm({ onSubmit }) {
+  const [products, setProducts] = useStateAddSale([]);
+  const [items, setItems] = useStateAddSale([{ productId: '', quantity: 1 }]);
+  const [submitting, setSubmitting] = useStateAddSale(false);
+  const [error, setError] = useStateAddSale('');
+
+  useEffectAddSale(() => {
+    productService.getProducts().then(setProducts).catch(() => setProducts([]));
+  }, []);
+
+  const handleChange = (idx, field, value) => {
+    setItems(items => items.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+  };
+  const addItem = () => setItems(items => [...items, { productId: '', quantity: 1 }]);
+  const removeItem = (idx) => setItems(items => items.filter((_, i) => i !== idx));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    try {
+      const validItems = items.filter(item => item.productId && item.quantity > 0);
+      if (validItems.length === 0) {
+        setError('يجب اختيار منتج واحد على الأقل وكمية صحيحة');
+        setSubmitting(false);
+        return;
+      }
+      await onSubmit(validItems);
+    } catch (err) {
+      setError('فشل في إضافة عملية البيع');
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <div className="text-red-600 text-sm">{error}</div>}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">الأصناف</label>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex gap-2 p-3 border border-gray-200 rounded-lg">
+              <select
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                value={item.productId}
+                onChange={e => handleChange(idx, 'productId', e.target.value)}
+                required
+              >
+                <option value="">اختر المنتج</option>
+                {products.map(product => (
+                  <option key={product.id} value={product.id}>{product.name}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="الكمية"
+                value={item.quantity}
+                onChange={e => handleChange(idx, 'quantity', parseInt(e.target.value) || 1)}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                min="1"
+                required
+              />
+              <Button size="sm" variant="danger" type="button" onClick={() => removeItem(idx)}>×</Button>
+            </div>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" className="mt-2" onClick={addItem} type="button">
+          <Plus className="w-4 h-4" />
+          إضافة صنف
+        </Button>
+      </div>
+      <div className="flex justify-end gap-3 pt-4">
+        <Button type="button" variant="secondary" onClick={() => window.history.back()}>إلغاء</Button>
+        <Button type="submit" variant="success" disabled={submitting}>تأكيد البيع</Button>
+      </div>
+    </form>
+  );
+}
 import { Plus, Search, Eye, Trash2, ShoppingCart, User } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
+import { saleService } from '../services/saleService';
 
 const SalesManager = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [saleItems, setSaleItems] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Mock data
-  const [sales, setSales] = useState([
-    { 
-      id: 1, 
-      date: '2024-01-15', 
-      total: 45000, 
-      items: 3, 
-      customer: 'أحمد محمد',
-      itemsList: [
-        { product: 'iPhone 14 Pro', quantity: 1, price: 25000 },
-        { product: 'AirPods Pro', quantity: 2, price: 8000 }
-      ]
-    },
-    { 
-      id: 2, 
-      date: '2024-01-15', 
-      total: 28000, 
-      items: 2, 
-      customer: 'فاطمة علي',
-      itemsList: [
-        { product: 'Samsung Galaxy S23', quantity: 1, price: 22000 },
-        { product: 'Samsung Galaxy Watch', quantity: 1, price: 6000 }
-      ]
-    },
-    { 
-      id: 3, 
-      date: '2024-01-14', 
-      total: 15000, 
-      items: 1, 
-      customer: 'محمد حسن',
-      itemsList: [
-        { product: 'Laptop Dell XPS 13', quantity: 1, price: 15000 }
-      ]
+  useEffect(() => {
+    loadSales();
+  }, []);
+
+  const loadSales = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await saleService.getSales();
+      setSales(data);
+    } catch (err) {
+      setError('فشل في تحميل بيانات المبيعات');
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  const products = [
-    { id: 1, name: 'iPhone 14 Pro', price: 25000, stock: 15 },
-    { id: 2, name: 'Samsung Galaxy S23', price: 22000, stock: 8 },
-    { id: 3, name: 'Laptop Dell XPS 13', price: 35000, stock: 5 },
-    { id: 4, name: 'AirPods Pro', price: 8000, stock: 20 },
-    { id: 5, name: 'MacBook Air M2', price: 45000, stock: 3 },
-    { id: 6, name: 'Samsung Galaxy Watch', price: 12000, stock: 12 }
-  ];
-
-  const filteredSales = sales.filter(sale => 
-    sale.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sale.id.toString().includes(searchTerm)
-  );
-
-  const addSaleItem = () => {
-    setSaleItems([...saleItems, { productId: '', quantity: 1, price: 0 }]);
   };
 
-  const removeSaleItem = (index) => {
-    setSaleItems(saleItems.filter((_, i) => i !== index));
-  };
+  const filteredSales = sales.filter(sale => {
+    const customer = sale.customerName || '';
+    return customer.toLowerCase().includes(searchTerm.toLowerCase()) || sale.id.toString().includes(searchTerm);
+  });
 
-  const updateSaleItem = (index, field, value) => {
-    const updated = saleItems.map((item, i) => {
-      if (i === index) {
-        const newItem = { ...item, [field]: value };
-        if (field === 'productId') {
-          const product = products.find(p => p.id === parseInt(value));
-          if (product) {
-            newItem.price = product.price;
-          }
-        }
-        return newItem;
-      }
-      return item;
-    });
-    setSaleItems(updated);
-  };
-
-  const getTotalPrice = () => {
-    return saleItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  const handleAddSale = (saleData) => {
-    const newSale = {
-      id: sales.length + 1,
-      date: new Date().toISOString().split('T')[0],
-      total: getTotalPrice(),
-      items: saleItems.length,
-      customer: saleData.customer,
-      itemsList: saleItems.map(item => {
-        const product = products.find(p => p.id === parseInt(item.productId));
-        return {
-          product: product?.name || 'منتج محذوف',
-          quantity: item.quantity,
-          price: item.price * item.quantity
-        };
-      })
-    };
-    setSales([newSale, ...sales]);
-    setSaleItems([]);
-    setIsAddModalOpen(false);
-  };
-
-  const handleDeleteSale = (saleId) => {
+  const handleDeleteSale = async (saleId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه العملية؟')) {
-      setSales(sales.filter(s => s.id !== saleId));
+      try {
+        await saleService.deleteSale(saleId);
+        await loadSales();
+      } catch (err) {
+        setError('فشل في حذف عملية البيع');
+      }
     }
   };
 
@@ -215,16 +226,16 @@ const SalesManager = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-semibold text-xs">{sale.customer.charAt(0)}</span>
+                        <span className="text-blue-600 font-semibold text-xs">{(sale.customer || sale.customerName || '').charAt(0)}</span>
                       </div>
-                      <span className="text-sm text-gray-900">{sale.customer}</span>
+                      <span className="text-sm text-gray-900">{sale.customer || sale.customerName || '---'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {sale.items} صنف
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                    {sale.total.toLocaleString()} جنيه
+                    {(sale.total ?? sale.totalPrice ?? 0).toLocaleString()} جنيه
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">
@@ -251,27 +262,25 @@ const SalesManager = () => {
         )}
       </Card>
 
+
+
       {/* Add Sale Modal */}
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setSaleItems([]);
-        }}
+        onClose={() => setIsAddModalOpen(false)}
         title="عملية بيع جديدة"
-        size="lg"
       >
-        <SaleForm 
-          onSubmit={handleAddSale}
-          saleItems={saleItems}
-          setSaleItems={setSaleItems}
-          products={products}
-          addSaleItem={addSaleItem}
-          removeSaleItem={removeSaleItem}
-          updateSaleItem={updateSaleItem}
-          getTotalPrice={getTotalPrice}
-        />
+        <AddSaleForm onSubmit={async (items) => {
+          try {
+            await saleService.createSale(items.map(i => ({ productId: parseInt(i.productId), quantity: i.quantity })));
+            setIsAddModalOpen(false);
+            await loadSales();
+          } catch (err) {
+            setError('فشل في إضافة عملية البيع');
+          }
+        }} />
       </Modal>
+
 
       {/* View Sale Modal */}
       <Modal
@@ -288,91 +297,7 @@ const SalesManager = () => {
   );
 };
 
-// Sale Form Component
-const SaleForm = ({ 
-  onSubmit, 
-  saleItems, 
-  setSaleItems, 
-  products, 
-  addSaleItem, 
-  removeSaleItem, 
-  updateSaleItem, 
-  getTotalPrice 
-}) => {
-  const [customerName, setCustomerName] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({ customer: customerName });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل (اختياري)</label>
-        <input
-          type="text"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="أدخل اسم العميل"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">الأصناف</label>
-        <div className="space-y-2 max-h-60 overflow-y-auto">
-          {saleItems.map((item, index) => (
-            <div key={index} className="flex gap-2 p-3 border border-gray-200 rounded-lg">
-              <select 
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                value={item.productId}
-                onChange={(e) => updateSaleItem(index, 'productId', e.target.value)}
-                required
-              >
-                <option value="">اختر المنتج</option>
-                {products.map(product => (
-                  <option key={product.id} value={product.id}>{product.name}</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                placeholder="الكمية"
-                value={item.quantity}
-                onChange={(e) => updateSaleItem(index, 'quantity', parseInt(e.target.value) || 0)}
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                min="1"
-                required
-              />
-              <div className="w-24 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600 flex items-center justify-center">
-                {(item.price * item.quantity).toLocaleString()}
-              </div>
-              <Button size="sm" variant="danger" type="button" onClick={() => removeSaleItem(index)}>×</Button>
-            </div>
-          ))}
-        </div>
-        <Button size="sm" variant="outline" className="mt-2" onClick={addSaleItem} type="button">
-          <Plus className="w-4 h-4" />
-          إضافة صنف
-        </Button>
-      </div>
-      
-      <div className="border-t pt-4">
-        <div className="flex justify-between text-lg font-semibold">
-          <span>الإجمالي:</span>
-          <span>{getTotalPrice().toLocaleString()} جنيه</span>
-        </div>
-      </div>
-      
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary">إلغاء</Button>
-        <Button type="submit" variant="success" disabled={saleItems.length === 0}>
-          تأكيد البيع
-        </Button>
-      </div>
-    </form>
-  );
-};
 
 // Sale Details Component
 const SaleDetails = ({ sale }) => {
@@ -400,13 +325,13 @@ const SaleDetails = ({ sale }) => {
       <div>
         <h4 className="font-medium text-gray-900 mb-2">تفاصيل الأصناف</h4>
         <div className="space-y-2">
-          {sale.itemsList.map((item, index) => (
+          {(sale.itemsList || sale.SaleItems || []).map((item, index) => (
             <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
               <div>
-                <p className="font-medium">{item.product}</p>
+                <p className="font-medium">{item.product ? item.product : (item.Product?.name || '---')}</p>
                 <p className="text-sm text-gray-600">الكمية: {item.quantity}</p>
               </div>
-              <p className="font-medium">{item.price.toLocaleString()} جنيه</p>
+              <p className="font-medium">{(item.price ?? item.subTotal ?? 0).toLocaleString()} جنيه</p>
             </div>
           ))}
         </div>
@@ -415,7 +340,7 @@ const SaleDetails = ({ sale }) => {
       <div className="border-t pt-4">
         <div className="flex justify-between text-lg font-bold">
           <span>الإجمالي:</span>
-          <span>{sale.total.toLocaleString()} جنيه</span>
+          <span>{(sale.total ?? sale.totalPrice ?? 0).toLocaleString()} جنيه</span>
         </div>
       </div>
     </div>

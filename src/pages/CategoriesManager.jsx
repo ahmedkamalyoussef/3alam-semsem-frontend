@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Filter } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
+import categoryService from '../services/categoryService';
 
 const CategoriesManager = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -10,49 +11,65 @@ const CategoriesManager = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data - في التطبيق الحقيقي ستأتي من API
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'الهواتف', description: 'هواتف ذكية وجوالات', productCount: 15, createdAt: '2024-01-01' },
-    { id: 2, name: 'أجهزة الكمبيوتر', description: 'لابتوبات وأجهزة كمبيوتر مكتبية', productCount: 8, createdAt: '2024-01-02' },
-    { id: 3, name: 'الإكسسوارات', description: 'سماعات وشواحن وإكسسوارات أخرى', productCount: 25, createdAt: '2024-01-03' },
-    { id: 4, name: 'الأجهزة المنزلية', description: 'أجهزة منزلية صغيرة', productCount: 12, createdAt: '2024-01-04' }
-  ]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Load categories on component mount
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await categoryService.getCategories();
+      setCategories(data);
+    } catch (error) {
+      setError('فشل في تحميل الفئات');
+      console.error('Error loading categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddCategory = (categoryData) => {
-    const newCategory = {
-      id: categories.length + 1,
-      ...categoryData,
-      productCount: 0,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    setCategories([...categories, newCategory]);
-    setIsAddModalOpen(false);
-  };
-
-  const handleEditCategory = (categoryData) => {
-    const updatedCategories = categories.map(c => 
-      c.id === editingCategory.id 
-        ? { ...c, ...categoryData }
-        : c
-    );
-    setCategories(updatedCategories);
-    setIsEditModalOpen(false);
-    setEditingCategory(null);
-  };
-
-  const handleDeleteCategory = (categoryId) => {
-    const category = categories.find(c => c.id === categoryId);
-    if (category.productCount > 0) {
-      alert('لا يمكن حذف فئة تحتوي على منتجات. يرجى نقل المنتجات أولاً.');
-      return;
+  const handleAddCategory = async (categoryData) => {
+    try {
+      await categoryService.createCategory(categoryData.name, categoryData.description);
+      await loadCategories(); // Reload categories
+      setIsAddModalOpen(false);
+    } catch (error) {
+      setError('فشل في إضافة الفئة');
+      console.error('Error adding category:', error);
     }
-    
+  };
+
+  const handleEditCategory = async (categoryData) => {
+    try {
+      await categoryService.updateCategory(editingCategory.id, categoryData);
+      await loadCategories(); // Reload categories
+      setIsEditModalOpen(false);
+      setEditingCategory(null);
+    } catch (error) {
+      setError('فشل في تحديث الفئة');
+      console.error('Error updating category:', error);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه الفئة؟')) {
-      setCategories(categories.filter(c => c.id !== categoryId));
+      try {
+        await categoryService.deleteCategory(categoryId);
+        await loadCategories(); // Reload categories
+      } catch (error) {
+        setError('فشل في حذف الفئة');
+        console.error('Error deleting category:', error);
+      }
     }
   };
 
@@ -68,11 +85,24 @@ const CategoriesManager = () => {
           <h2 className="text-2xl font-bold text-gray-900">إدارة الفئات</h2>
           <p className="text-gray-600 mt-1">إدارة فئات المنتجات وتنظيمها</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
+        <Button onClick={() => setIsAddModalOpen(true)} disabled={loading}>
           <Plus className="w-4 h-4" />
           إضافة فئة جديدة
         </Button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+          <button 
+            onClick={() => setError('')}
+            className="float-left text-red-500 hover:text-red-700"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <Card>
@@ -89,8 +119,25 @@ const CategoriesManager = () => {
       </Card>
 
       {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredCategories.map((category) => (
+      {loading ? (
+        <Card>
+          <div className="p-6 text-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">جاري تحميل الفئات...</p>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredCategories.length === 0 ? (
+            <div className="col-span-full">
+              <Card>
+                <div className="p-6 text-center text-gray-500">
+                  {searchTerm ? 'لم يتم العثور على فئات تطابق البحث' : 'لا توجد فئات متاحة'}
+                </div>
+              </Card>
+            </div>
+          ) : (
+            filteredCategories.map((category) => (
           <Card key={category.id} className="hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -99,7 +146,7 @@ const CategoriesManager = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
-                  <p className="text-sm text-gray-600">{category.productCount} منتج</p>
+                  <p className="text-sm text-gray-600">{category.description || 'لا يوجد وصف'}</p>
                 </div>
               </div>
               <div className="flex gap-1">
@@ -130,16 +177,11 @@ const CategoriesManager = () => {
               </span>
             </div>
           </Card>
-        ))}
-      </div>
-
-      {filteredCategories.length === 0 && (
-        <Card className="text-center py-12">
-          <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد فئات</h3>
-          <p className="text-gray-500">ابدأ بإضافة فئة جديدة</p>
-        </Card>
+            ))
+          )}
+        </div>
       )}
+
 
       {/* Add Category Modal */}
       <Modal

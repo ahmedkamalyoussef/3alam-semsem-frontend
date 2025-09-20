@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const AuthContext = createContext();
 
@@ -39,69 +40,29 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // Simulate API call - replace with real API
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const userData = { email, name: email.split('@')[0] };
-        
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Invalid credentials' };
-      }
-    } catch (error) {
-      // For demo purposes, accept any email/password
+      const data = await apiService.loginAdmin(email, password);
       const userData = { email, name: email.split('@')[0] };
-      const token = 'demo-token-' + Date.now();
       
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message || 'Invalid credentials' };
     }
   };
 
   const register = async (email, password) => {
     try {
-      // Simulate API call - replace with real API
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const userData = { email, name: email.split('@')[0] };
-        
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Registration failed' };
-      }
-    } catch (error) {
-      // For demo purposes, accept any email/password
+      const data = await apiService.registerAdmin(email, password);
       const userData = { email, name: email.split('@')[0] };
-      const token = 'demo-token-' + Date.now();
       
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message || 'Registration failed' };
     }
   };
 
