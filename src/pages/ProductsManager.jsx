@@ -182,9 +182,7 @@ const ProductsManager = () => {
                       <Button size="sm" variant="outline" onClick={() => openEditModal(product)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      
                       <Button size="sm" variant="danger" onClick={() => handleDeleteProduct(product.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
