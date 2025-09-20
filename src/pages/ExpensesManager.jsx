@@ -26,7 +26,7 @@ const ExpensesManager = () => {
     loadMonthlyStats(selectedMonth, selectedYear);
     loadMonthlyExpenses(selectedMonth, selectedYear);
     loadExpenses();
-  }, [selectedMonth, selectedYear,modalType,monthlyExpensesList]);
+  }, [selectedMonth, selectedYear, modalType]);
 
   const loadMonthlyStats = async (month, year) => {
     try {
@@ -139,13 +139,21 @@ const ExpensesManager = () => {
       {/* Statistics */}
       <div className="flex gap-2 items-center mb-4">
         <label>الشهر:</label>
-        <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>
+        <select
+          className="border rounded px-2 py-1 focus:ring focus:ring-blue-400"
+          value={selectedMonth}
+          onChange={e => setSelectedMonth(Number(e.target.value))}
+        >
           {[...Array(12)].map((_, i) => (
             <option key={i+1} value={i+1}>{i+1}</option>
           ))}
         </select>
         <label>السنة:</label>
-        <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
+        <select
+          className="border rounded px-2 py-1 focus:ring focus:ring-blue-400"
+          value={selectedYear}
+          onChange={e => setSelectedYear(Number(e.target.value))}
+        >
           {[...Array(5)].map((_, i) => {
             const year = new Date().getFullYear() - 2 + i;
             return <option key={year} value={year}>{year}</option>;
@@ -153,6 +161,7 @@ const ExpensesManager = () => {
         </select>
       </div>
 
+      {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         <Card>
           <div className="flex items-center justify-between">
@@ -272,7 +281,8 @@ const ExpensesManager = () => {
 const ExpenseForm = ({ onSubmit, initialData = {} }) => {
   const [formData, setFormData] = useState({
     description: initialData.description || '',
-    amount: initialData.amount || ''
+    amount: initialData.amount || '',
+    date: initialData.expenseDate || ''
   });
 
   const handleSubmit = (e) => {
@@ -288,7 +298,7 @@ const ExpenseForm = ({ onSubmit, initialData = {} }) => {
         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         placeholder="وصف المصروف"
         required
-        className="w-full border px-3 py-2 rounded"
+        className="w-full border px-3 py-2 rounded focus:ring focus:ring-blue-400"
       />
       <input
         type="number"
@@ -296,7 +306,14 @@ const ExpenseForm = ({ onSubmit, initialData = {} }) => {
         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
         placeholder="المبلغ"
         required
-        className="w-full border px-3 py-2 rounded"
+        className="w-full border px-3 py-2 rounded focus:ring focus:ring-blue-400"
+      />
+      <input
+        type="date"
+        value={formData.date}
+        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+        required
+        className="w-full border px-3 py-2 rounded focus:ring focus:ring-blue-400"
       />
       <div className="flex justify-end gap-2">
         <Button type="submit" variant="success">حفظ</Button>
