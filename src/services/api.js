@@ -35,6 +35,13 @@ class ApiService {
       }
 
       if (!response.ok) {
+        // If unauthorized, clear token and force logout
+        if (response.status === 401 || (data && (data.message?.toLowerCase().includes('jwt') || data.message?.toLowerCase().includes('unauthorized')))) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          // Optionally, reload or redirect
+          window.location.href = '/login';
+        }
         throw new Error(data.message || data || `HTTP error! status: ${response.status}`);
       }
 

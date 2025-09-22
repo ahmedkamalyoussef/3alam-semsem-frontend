@@ -20,6 +20,11 @@ const CategoriesManager = () => {
     loadCategories();
   }, []);
 
+  const formatDate=(isoDate) => {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString("en-GB"); 
+}
+
   const loadCategories = async () => {
     try {
       setLoading(true);
@@ -164,10 +169,10 @@ const CategoriesManager = () => {
               </div>
             </div>
             
-            <p className="text-gray-700 text-sm mb-4">{category.description}</p>
+            {/* <p className="text-gray-700 text-sm mb-4">{category.description}</p> */}
             
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>تاريخ الإنشاء: {category.createdAt}</span>
+              <span>تاريخ الإنشاء: {formatDate(category.createdAt)}</span>
               <span className={`px-2 py-1 rounded-full ${
                 category.productCount > 0 
                   ? 'bg-green-100 text-green-800' 
