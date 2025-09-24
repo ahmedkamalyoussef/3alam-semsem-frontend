@@ -232,7 +232,7 @@ const WholesaleProductsManager = () => {
               <tr className="border-b border-gray-200">
                 <th className="text-right py-3 px-4 font-medium text-gray-700">اسم المنتج</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">الفئة</th>
-                <th className="text-right py-3 px-4 font-medium text-gray-700">السعر العادي</th>
+                <th className="text-right py-3 px-4 font-medium text-gray-700">سعر البيع</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">سعر الجملة</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">الكمية</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">الإجراءات</th>
@@ -338,7 +338,7 @@ const WholesaleProductsManager = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                السعر العادي *
+                سعر البيع*
               </label>
               <input
                 type="number"
