@@ -38,31 +38,58 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  // Login: step 1 (send OTP)
   const login = async (email, password) => {
     try {
       const data = await apiService.loginAdmin(email, password);
-      const userData = { email, name: email.split('@')[0] };
-      
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      return { success: true };
+      return { success: true, message: data.message };
     } catch (error) {
-      return { success: false, error: error.message || 'Invalid credentials' };
+      return { success: false, error: error.message || 'Login failed' };
     }
   };
 
-  const register = async (email, password) => {
+  // Login: step 2 (verify OTP and get token)
+  const verifyLogin = async (email, otp) => {
     try {
-      const data = await apiService.registerAdmin(email, password);
+      const data = await apiService.verifyAdminLogin(email, otp);
       const userData = { email, name: email.split('@')[0] };
       
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      return { success: true };
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, error: error.message || 'OTP verification failed' };
+    }
+  };
+
+  // Registration: step 1 (create admin and send OTP)
+  const register = async (email, password, confirmPassword) => {
+    try {
+      const data = await apiService.registerAdmin(email, password, confirmPassword);
+      return { success: true, message: data.message, adminId: data.adminId };
     } catch (error) {
       return { success: false, error: error.message || 'Registration failed' };
+    }
+  };
+
+  // Registration: step 2 (verify OTP)
+  const verifyRegistration = async (email, otp) => {
+    try {
+      const data = await apiService.verifyAdminRegistration(email, otp);
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, error: error.message || 'OTP verification failed' };
+    }
+  };
+
+  // Resend OTP
+  const resendOTP = async (email, type) => {
+    try {
+      const data = await apiService.resendOTP(email, type);
+      return { success: true, message: data.message };
+    } catch (error) {
+      return { success: false, error: error.message || 'Failed to resend OTP' };
     }
   };
 
@@ -75,7 +102,10 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    verifyLogin,
     register,
+    verifyRegistration,
+    resendOTP,
     logout,
     loading,
     isAuthenticated: !!user,

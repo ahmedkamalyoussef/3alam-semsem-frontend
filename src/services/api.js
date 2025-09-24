@@ -53,6 +53,23 @@ class ApiService {
   }
 
   // Admin endpoints
+  // Registration: step 1 (create admin and send OTP)
+  async registerAdmin(email, password, confirmPassword) {
+    return this.request('/admin/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, confirmPassword })
+    });
+  }
+
+  // Registration: step 2 (verify OTP)
+  async verifyAdminRegistration(email, otp) {
+    return this.request('/admin/register/verify', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp })
+    });
+  }
+
+  // Login: step 1 (send OTP)
   async loginAdmin(email, password) {
     return this.request('/admin/login', {
       method: 'POST',
@@ -60,10 +77,19 @@ class ApiService {
     });
   }
 
-  async registerAdmin(email, password) {
-    return this.request('/admin/register', {
+  // Login: step 2 (verify OTP and get token)
+  async verifyAdminLogin(email, otp) {
+    return this.request('/admin/login/verify', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, otp })
+    });
+  }
+
+  // Resend OTP
+  async resendOTP(email, type) {
+    return this.request('/admin/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, type })
     });
   }
 

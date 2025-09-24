@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
@@ -7,6 +7,23 @@ import StoreManagement from './StoreManagement';
 
 const AppRouter = () => {
   const { isAuthenticated, loading } = useAuth();
+
+  // Get current path
+  const path = window.location.pathname;
+
+  // Redirect authenticated users away from auth pages
+  useEffect(() => {
+    if (!loading && isAuthenticated && (path === '/login' || path === '/register')) {
+      window.location.href = '/dashboard';
+    }
+  }, [isAuthenticated, loading, path]);
+
+  // Redirect root path to dashboard for authenticated users
+  useEffect(() => {
+    if (!loading && isAuthenticated && path === '/') {
+      window.location.href = '/dashboard';
+    }
+  }, [isAuthenticated, loading, path]);
 
   if (loading) {
     return (
@@ -19,24 +36,32 @@ const AppRouter = () => {
     );
   }
 
-  // Get current path
-  const path = window.location.pathname;
+  // If user is authenticated, show protected content
+  if (isAuthenticated) {
+    // Handle dashboard route specifically
+    if (path === '/dashboard' || path === '/') {
+      return (
+        <ProtectedRoute>
+          <StoreManagement />
+        </ProtectedRoute>
+      );
+    }
+    
+    // For any other authenticated route, show the main app
+    return (
+      <ProtectedRoute>
+        <StoreManagement />
+      </ProtectedRoute>
+    );
+  }
 
-  // Handle auth routes
+  // Handle auth routes for non-authenticated users
   if (path === '/register') {
     return <Register />;
   }
 
-  if (path === '/login' || !isAuthenticated) {
-    return <Login />;
-  }
-
-  // Protected routes
-  return (
-    <ProtectedRoute>
-      <StoreManagement />
-    </ProtectedRoute>
-  );
+  // Default to login for non-authenticated users
+  return <Login />;
 };
 
 export default AppRouter;
