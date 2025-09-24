@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { Plus, Search, Edit, Trash2, Eye, Package } from 'lucide-react';
+import { Plus, Search, Eye, Package } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
@@ -9,8 +9,6 @@ import categoryService from '../services/categoryService';
 
 const ProductsManager = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
@@ -67,43 +65,7 @@ const ProductsManager = () => {
     }
   };
 
-  const handleEditProduct = async (productData) => {
-    try {
-      await productService.updateProduct(editingProduct.id, {
-        name: productData.name,
-        price: parseFloat(productData.price),
-        stock: parseInt(productData.stock),
-        categoryId: parseInt(productData.categoryId)
-      });
-      await loadData(); // Reload products
-      setIsEditModalOpen(false);
-      setEditingProduct(null);
-      toast.success('تم تحديث المنتج بنجاح');
-    } catch (error) {
-      toast.error(error?.message || 'فشل في تحديث المنتج');
-      setError('فشل في تحديث المنتج');
-      console.error('Error updating product:', error);
-    }
-  };
 
-  const handleDeleteProduct = async (productId) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-      try {
-        await productService.deleteProduct(productId);
-        await loadData(); // Reload products
-        toast.success('تم حذف المنتج بنجاح');
-      } catch (error) {
-        toast.error(error?.message || 'فشل في حذف المنتج');
-        setError('فشل في حذف المنتج');
-        console.error('Error deleting product:', error);
-      }
-    }
-  };
-
-  const openEditModal = (product) => {
-    setEditingProduct(product);
-    setIsEditModalOpen(true);
-  };
 
   return (
     // Only show error div for local validation errors, not API errors
@@ -188,12 +150,8 @@ const ProductsManager = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditModal(product)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      
-                      <Button size="sm" variant="danger" onClick={() => handleDeleteProduct(product.id)}>
-                        <Trash2 className="w-4 h-4" />
+                      <Button size="sm" variant="outline" onClick={() => {/* View only */}}>
+                        <Eye className="w-4 h-4" />
                       </Button>
                     </div>
                   </td>
@@ -221,23 +179,6 @@ const ProductsManager = () => {
         <ProductForm onSubmit={handleAddProduct} categories={categories} />
       </Modal>
 
-      {/* Edit Product Modal */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingProduct(null);
-        }}
-        title="تعديل المنتج"
-      >
-        {editingProduct && (
-          <ProductForm 
-            onSubmit={handleEditProduct} 
-            categories={categories} 
-            initialData={editingProduct}
-          />
-        )}
-      </Modal>
     </div>
   );
 };

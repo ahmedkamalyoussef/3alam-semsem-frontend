@@ -3,6 +3,7 @@ import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import Dashboard from '../pages/Dashboard';
 import ProductsManager from '../pages/ProductsManager';
+import WholesaleProductsManager from '../pages/WholesaleProductsManager';
 import SalesManager from '../pages/SalesManager';
 import CategoriesManager from '../pages/CategoriesManager';
 import ExpensesManager from '../pages/ExpensesManager';
@@ -19,6 +20,8 @@ const StoreManagement = () => {
   return <Dashboard onNavigate={setActiveTab} />;
       case 'products':
         return <ProductsManager />;
+      case 'wholesaleProducts':
+        return <WholesaleProductsManager />;
       case 'categories':
         return <CategoriesManager />;
       case 'sales':

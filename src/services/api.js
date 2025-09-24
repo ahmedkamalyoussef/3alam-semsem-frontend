@@ -123,14 +123,22 @@ class ApiService {
     return this.request('/product');
   }
 
+  async getWholesaleProducts() {
+    return this.request('/product/wholesale');
+  }
+
   async getProductsByCategory(categoryId) {
     return this.request(`/product/category/${categoryId}`);
   }
 
-  async createProduct(name, price, stock, categoryId) {
+  async createProduct(name, price, stock, categoryId, wholesale_price = null) {
+    const body = { name, price, stock, categoryId };
+    if (wholesale_price !== null) {
+      body.wholesale_price = wholesale_price;
+    }
     return this.request('/product', {
       method: 'POST',
-      body: JSON.stringify({ name, price, stock, categoryId })
+      body: JSON.stringify(body)
     });
   }
 

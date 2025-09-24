@@ -7,7 +7,8 @@ import {
   ShoppingCart, 
   Wrench, 
   Receipt,
-  ShoppingBag
+  ShoppingBag,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -16,6 +17,7 @@ const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpe
   const menuItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: Home },
     { id: 'products', label: 'المنتجات', icon: Package },
+    { id: 'wholesaleProducts', label: 'منتجات الجملة', icon: DollarSign },
     { id: 'categories', label: 'الفئات', icon: Filter },
     { id: 'sales', label: 'المبيعات', icon: ShoppingCart },
   // { id: 'saleItems', label: 'أصناف المبيعات', icon: ShoppingBag },
