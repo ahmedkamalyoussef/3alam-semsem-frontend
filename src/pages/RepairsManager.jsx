@@ -74,7 +74,7 @@ const RepairsManager = () => {
 
   const handleEditRepair = async (repairData) => {
     try {
-      await editRepair(editingRepair.id, repairData, selectedMonth, selectedYear);
+      await editRepair(editingRepair._id, repairData, selectedMonth, selectedYear);
       setIsEditModalOpen(false);
       setEditingRepair(null);
     } catch (error) {
@@ -242,10 +242,10 @@ const RepairsManager = () => {
                   statusColor = 'bg-red-200 text-green-800';
                 }
                 return (
-                  <React.Fragment key={repair.id}>
+                  <React.Fragment key={repair._id}> 
                     <tr
-                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${expandedRepairId === repair.id ? 'bg-blue-50' : ''}`}
-                      onClick={() => setExpandedRepairId(expandedRepairId === repair.id ? null : repair.id)}
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${expandedRepairId === repair._id ? 'bg-blue-50' : ''}`}
+                      onClick={() => setExpandedRepairId(expandedRepairId === repair._id ? null : repair._id)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
@@ -276,22 +276,22 @@ const RepairsManager = () => {
                           <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); openEditModal(repair); }}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="danger" onClick={e => { e.stopPropagation(); handleDeleteRepair(repair.id); }}>
+                          <Button size="sm" variant="danger" onClick={e => { e.stopPropagation(); handleDeleteRepair(repair._id); }}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="success" title="تم الإصلاح" onClick={e => { e.stopPropagation(); handleMarkFixed(repair.id); }}>
+                          <Button size="sm" variant="success" title="تم الإصلاح" onClick={e => { e.stopPropagation(); handleMarkFixed(repair._id); }}>
                             <Check className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="secondary" title="لم يتم الإصلاح" onClick={e => { e.stopPropagation(); handleMarkNotFixed(repair.id); }}>
+                          <Button size="sm" variant="secondary" title="لم يتم الإصلاح" onClick={e => { e.stopPropagation(); handleMarkNotFixed(repair._id); }}>
                             <X className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" title="تسليم" onClick={e => { e.stopPropagation(); handleDeliver(repair.id); }}>
+                          <Button size="sm" variant="ghost" title="تسليم" onClick={e => { e.stopPropagation(); handleDeliver(repair._id); }}>
                             <Truck className="w-4 h-4" />
                           </Button>
                         </div>
                       </td>
                     </tr>
-                    {expandedRepairId === repair.id && (
+                    {expandedRepairId === repair._id && (
                       <tr>
                         <td colSpan={7} className="bg-blue-50 px-6 py-4">
                           <div className="text-sm text-gray-900">

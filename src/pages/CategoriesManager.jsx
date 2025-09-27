@@ -56,7 +56,7 @@ const CategoriesManager = () => {
 
   const handleEditCategory = async (categoryData) => {
     try {
-      await categoryService.updateCategory(editingCategory.id, categoryData);
+      await categoryService.updateCategory(editingCategory._id, categoryData);
       await loadCategories(); // Reload categories
       setIsEditModalOpen(false);
       setEditingCategory(null);
@@ -143,7 +143,7 @@ const CategoriesManager = () => {
             </div>
           ) : (
             filteredCategories.map((category) => (
-          <Card key={category.id} className="hover:shadow-lg transition-shadow duration-200">
+          <Card key={category._id} className="hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -161,7 +161,7 @@ const CategoriesManager = () => {
                 <Button 
                   size="sm" 
                   variant="danger" 
-                  onClick={() => handleDeleteCategory(category.id)}
+                  onClick={() => handleDeleteCategory(category._id)}
                   disabled={category.productCount > 0}
                 >
                   <Trash2 className="w-4 h-4" />

@@ -57,7 +57,7 @@ function AddSaleForm({ onSubmit }) {
               >
                 <option value="">اختر المنتج</option>
                 {products.map(product => (
-                  <option key={product.id} value={product.id}>{product.name}</option>
+                  <option key={product._id} value={product._id}>{product.name}</option>
                 ))}
               </select>
               <input
@@ -120,7 +120,7 @@ const SalesManager = () => {
   }, [selectedMonth, selectedYear, loadMonthlyStats]);
 
   const displayedSales = (monthlyStats && Array.isArray(monthlyStats.sales)) ? monthlyStats.sales : sales;
-  const filteredSales = displayedSales.filter(sale => sale.id.toString().includes(searchTerm));
+  const filteredSales = displayedSales.filter(sale => sale._id.toString().includes(searchTerm));
 
   const handleDeleteSale = async (saleId) => {
     if (window.confirm('هل أنت متأكد من حذف هذه العملية؟')) {
@@ -137,7 +137,7 @@ const SalesManager = () => {
     setViewLoading(true);
     setIsViewModalOpen(true);
     try {
-      const saleData = await (await import('../services/saleService')).default.getSaleById(sale.id);
+      const saleData = await (await import('../services/saleService')).default.getSaleById(sale._id);
       setSelectedSale(saleData);
     } catch (err) {
       setSelectedSale({ ...sale, error: 'فشل في تحميل تفاصيل العملية' });
@@ -237,7 +237,7 @@ const SalesManager = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={sale._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {sale.SaleItems && sale.SaleItems.length > 0
                       ? (sale.SaleItems[0].Product?.name || sale.SaleItems[0].product || '---')
@@ -257,7 +257,7 @@ const SalesManager = () => {
                       <Button size="sm" variant="outline" onClick={() => openViewModal(sale)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="danger" onClick={() => handleDeleteSale(sale.id)}>
+                      <Button size="sm" variant="danger" onClick={() => handleDeleteSale(sale._id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -285,7 +285,7 @@ const SalesManager = () => {
         <AddSaleForm onSubmit={async (items) => {
           try {
             await addSale(
-              items.map(i => ({ productId: parseInt(i.productId), quantity: i.quantity })),
+              items.map(i => ({ productId: i.productId, quantity: i.quantity })),
               selectedMonth,
               selectedYear
             );
@@ -304,7 +304,7 @@ const SalesManager = () => {
           setIsViewModalOpen(false);
           setSelectedSale(null);
         }}
-        title={`تفاصيل العملية #${selectedSale?.id || ''}`}
+        title={`تفاصيل العملية #${selectedSale?._id || ''}`}
       >
         {viewLoading ? (
           <div className="text-center py-8">جاري تحميل التفاصيل...</div>
@@ -322,7 +322,7 @@ const SaleDetails = ({ sale }) => {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <p className="text-sm text-gray-600">رقم العملية</p>
-          <p className="font-medium">#{sale.id}</p>
+          <p className="font-medium">#{sale._id}</p>
         </div>
         <div>
           <p className="text-sm text-gray-600">التاريخ</p>

@@ -89,7 +89,7 @@ const WholesaleProductsManager = () => {
   const handleDeleteProduct = async (product) => {
     if (window.confirm(`هل أنت متأكد من حذف المنتج "${product.name}"؟`)) {
       try {
-        await apiService.deleteProduct(product.id);
+        await apiService.deleteProduct(product._id);
         toast.success('تم حذف المنتج بنجاح');
         loadData();
       } catch (error) {
@@ -126,12 +126,12 @@ const WholesaleProductsManager = () => {
     try {
       if (editingProduct) {
         // Update product
-        await apiService.updateProduct(editingProduct.id, {
+        await apiService.updateProduct(editingProduct._id, {
           name: formData.name.trim(),
           price: parseFloat(formData.price),
           wholesale_price: parseFloat(formData.wholesale_price),
           stock: parseInt(formData.stock),
-          categoryId: parseInt(formData.categoryId)
+          categoryId: formData.categoryId
         });
         toast.success('تم تحديث المنتج بنجاح');
         setIsEditModalOpen(false);
@@ -141,7 +141,7 @@ const WholesaleProductsManager = () => {
           formData.name.trim(),
           parseFloat(formData.price),
           parseInt(formData.stock),
-          parseInt(formData.categoryId),
+          formData.categoryId,
           parseFloat(formData.wholesale_price)
         );
         toast.success('تم إضافة المنتج بنجاح');
@@ -215,7 +215,7 @@ const WholesaleProductsManager = () => {
             >
               <option value="">جميع الفئات</option>
               {categories.map(category => (
-                <option key={category.id} value={category.id}>
+                <option key={category._id} value={category._id}>
                   {category.name}
                 </option>
               ))}
@@ -230,7 +230,7 @@ const WholesaleProductsManager = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-right py-3 px-4 font-medium text-gray-700">اسم المنتج</th>
+                <th className="text-right py-3 px-4 font-medium text-gray-700"  >اسم المنتج</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">الفئة</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">سعر البيع</th>
                 <th className="text-right py-3 px-4 font-medium text-gray-700">سعر الجملة</th>
@@ -247,7 +247,7 @@ const WholesaleProductsManager = () => {
                 </tr>
               ) : (
                 filteredProducts.map(product => (
-                  <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={product._id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="font-medium text-gray-900">{product.name}</div>
                     </td>
@@ -401,7 +401,7 @@ const WholesaleProductsManager = () => {
               >
                 <option value="">اختر الفئة</option>
                 {categories.map(category => (
-                  <option key={category.id} value={category.id}>
+                  <option key={category._id} value={category._id}>
                     {category.name}
                   </option>
                 ))}
@@ -518,7 +518,7 @@ const WholesaleProductsManager = () => {
               >
                 <option value="">اختر الفئة</option>
                 {categories.map(category => (
-                  <option key={category.id} value={category.id}>
+                  <option key={category._id} value={category._id}>
                     {category.name}
                   </option>
                 ))}

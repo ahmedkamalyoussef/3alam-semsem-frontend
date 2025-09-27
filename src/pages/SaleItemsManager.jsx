@@ -13,7 +13,7 @@ const SaleItemsManager = () => {
   // Mock data - في التطبيق الحقيقي ستأتي من API
   const [saleItems, setSaleItems] = useState([
     {
-      id: 1,
+      _id: 1,
       saleId: 1,
       productId: 1,
       productName: 'iPhone 14 Pro',
@@ -24,7 +24,7 @@ const SaleItemsManager = () => {
       customerName: 'أحمد محمد'
     },
     {
-      id: 2,
+      _id: 2,
       saleId: 1,
       productId: 4,
       productName: 'AirPods Pro',
@@ -35,7 +35,7 @@ const SaleItemsManager = () => {
       customerName: 'أحمد محمد'
     },
     {
-      id: 3,
+      _id: 3,
       saleId: 2,
       productId: 2,
       productName: 'Samsung Galaxy S23',
@@ -46,7 +46,7 @@ const SaleItemsManager = () => {
       customerName: 'فاطمة علي'
     },
     {
-      id: 4,
+      _id: 4,
       saleId: 2,
       productId: 6,
       productName: 'Samsung Galaxy Watch',
@@ -57,7 +57,7 @@ const SaleItemsManager = () => {
       customerName: 'فاطمة علي'
     },
     {
-      id: 5,
+      _id: 5,
       saleId: 3,
       productId: 3,
       productName: 'Laptop Dell XPS 13',
@@ -68,7 +68,7 @@ const SaleItemsManager = () => {
       customerName: 'محمد حسن'
     },
     {
-      id: 6,
+      _id: 6,
       saleId: 4,
       productId: 5,
       productName: 'MacBook Air M2',
@@ -81,12 +81,12 @@ const SaleItemsManager = () => {
   ]);
 
   const products = [
-    { id: 1, name: 'iPhone 14 Pro' },
-    { id: 2, name: 'Samsung Galaxy S23' },
-    { id: 3, name: 'Laptop Dell XPS 13' },
-    { id: 4, name: 'AirPods Pro' },
-    { id: 5, name: 'MacBook Air M2' },
-    { id: 6, name: 'Samsung Galaxy Watch' }
+    { _id: 1, name: 'iPhone 14 Pro' },
+    { _id: 2, name: 'Samsung Galaxy S23' },
+    { _id: 3, name: 'Laptop Dell XPS 13' },
+    { _id: 4, name: 'AirPods Pro' },
+    { _id: 5, name: 'MacBook Air M2' },
+    { _id: 6, name: 'Samsung Galaxy Watch' }
   ];
 
   const filteredSaleItems = saleItems.filter(item => {
@@ -182,7 +182,7 @@ const SaleItemsManager = () => {
           >
             <option value="">جميع المنتجات</option>
             {products.map(product => (
-              <option key={product.id} value={product.id}>{product.name}</option>
+              <option key={product._id} value={product._id}>{product.name}</option>
             ))}
           </select>
         </div>
@@ -206,7 +206,7 @@ const SaleItemsManager = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredSaleItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={item._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     #{item.saleId}
                   </td>
@@ -268,7 +268,7 @@ const SaleItemsManager = () => {
           setIsViewModalOpen(false);
           setSelectedSaleItem(null);
         }}
-        title={`تفاصيل الصنف #${selectedSaleItem?.id}`}
+        title={`تفاصيل الصنف #${selectedSaleItem?._id}`}
       >
         {selectedSaleItem && <SaleItemDetails item={selectedSaleItem} />}
       </Modal>
@@ -287,7 +287,7 @@ const SaleItemDetails = ({ item }) => {
         </div>
         <div>
           <p className="text-sm text-gray-600">معرف الصنف</p>
-          <p className="font-medium">#{item.id}</p>
+          <p className="font-medium">#{item._id}</p>
         </div>
         <div>
           <p className="text-sm text-gray-600">المنتج</p>

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5001/api/v1';
+const API_BASE_URL = 'https://3alam-semsem-backend.vercel.app/api/v1';
 
 class ApiService {
   constructor() {

@@ -43,7 +43,7 @@ const ProductsManager = () => {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || product.categoryId === parseInt(selectedCategory);
+    const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -53,7 +53,7 @@ const ProductsManager = () => {
         productData.name,
         parseFloat(productData.price),
         parseInt(productData.stock),
-        parseInt(productData.categoryId)
+        productData.categoryId
       );
       await loadData(); // Reload products
       setIsAddModalOpen(false);
@@ -103,7 +103,7 @@ const ProductsManager = () => {
           >
             <option value="">جميع الفئات</option>
             {categories.map(category => (
-              <option key={category.id} value={category.id}>{category.name}</option>
+              <option key={category._id} value={category._id}>{category.name}</option>
             ))}
           </select>
         </div>
@@ -124,7 +124,7 @@ const ProductsManager = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={product._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">{product.name}</div>
@@ -133,7 +133,7 @@ const ProductsManager = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {categories.find(cat => cat.id === product.categoryId)?.name || 'غير محدد'}
+                      {categories.find(cat => cat._id === product.categoryId)?.name || 'غير محدد'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
@@ -230,7 +230,7 @@ const ProductForm = ({ onSubmit, categories, initialData = {} }) => {
         >
           <option value="">اختر الفئة</option>
           {categories.map(category => (
-            <option key={category.id} value={category.id}>{category.name}</option>
+            <option key={category._id} value={category._id}>{category.name}</option>
           ))}
         </select>
       </div>

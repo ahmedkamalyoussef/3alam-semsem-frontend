@@ -158,7 +158,7 @@ const Dashboard = ({ onNavigate }) => {
               let date = sale.saleDate || sale.createdAt || sale.date || '';
               // لا تستخدم charAt إلا إذا كان customer موجود ونصي
               return (
-                <div key={sale.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                <div key={sale._id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-semibold text-sm">{typeof customer === 'string' && customer.length > 0 ? customer.charAt(0) : '-'}</span>
@@ -213,7 +213,7 @@ const Dashboard = ({ onNavigate }) => {
                 statusColor = 'bg-red-100 text-red-800';
               }
               return (
-                <div key={repair.id || i} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                <div key={repair._id || i} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
                       <Wrench className="w-5 h-5 text-yellow-600" />

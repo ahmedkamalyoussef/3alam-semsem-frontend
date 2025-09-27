@@ -63,7 +63,7 @@ const ExpensesManager = () => {
 
   const handleEditExpense = async (expenseData) => {
     try {
-      await editExpense(editingExpense.id, {
+      await editExpense(editingExpense._id, {
         description: expenseData.description,
         amount: parseFloat(expenseData.amount),
         expenseDate: expenseData.date
@@ -194,18 +194,18 @@ const ExpensesManager = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredExpenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-gray-50">
+                <tr key={expense._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{expense.description}</td>
                   <td className="px-6 py-4 text-red-600">{expense.amount.toLocaleString()} جنيه</td>
                   <td className="px-6 py-4">{expense.date}</td>
                   <td className="px-6 py-4 flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => openViewModal(expense.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => openViewModal(expense._id)}>
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => { setEditingExpense(expense); setModalType('edit'); }}>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(expense.id)}>
+                    <Button size="sm" variant="danger" onClick={() => handleDeleteExpense(expense._id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </td>
